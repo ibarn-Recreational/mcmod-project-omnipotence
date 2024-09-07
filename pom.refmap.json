@@ -1,0 +1,66 @@
+{
+  "mappings": {
+    "com/ibarnstormer/projectomnipotence/mixin/EntityMixin": {
+      "isAlliedTo(Lnet/minecraft/world/entity/Entity;)Z": "Lnet/minecraft/world/entity/Entity;m_7307_(Lnet/minecraft/world/entity/Entity;)Z"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/LivingEntityMixin": {
+      "addAdditionalSaveData": "Lnet/minecraft/world/entity/LivingEntity;m_7380_(Lnet/minecraft/nbt/CompoundTag;)V",
+      "defineSynchedData": "Lnet/minecraft/world/entity/LivingEntity;m_8097_()V",
+      "dropAllDeathLoot": "Lnet/minecraft/world/entity/LivingEntity;m_6668_(Lnet/minecraft/world/damagesource/DamageSource;)V",
+      "tick": "Lnet/minecraft/world/entity/LivingEntity;m_8119_()V",
+      "readAdditionalSaveData": "Lnet/minecraft/world/entity/LivingEntity;m_7378_(Lnet/minecraft/nbt/CompoundTag;)V",
+      "canAttack(Lnet/minecraft/world/entity/LivingEntity;)Z": "Lnet/minecraft/world/entity/LivingEntity;m_6779_(Lnet/minecraft/world/entity/LivingEntity;)Z",
+      "hurt": "Lnet/minecraft/world/entity/LivingEntity;m_6469_(Lnet/minecraft/world/damagesource/DamageSource;F)Z"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/LivingEntityInvoker": {
+      "dropAllDeathLoot": "m_6668_(Lnet/minecraft/world/damagesource/DamageSource;)V",
+      "dropCustomDeathLoot": "m_7472_(Lnet/minecraft/world/damagesource/DamageSource;IZ)V"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/PlayerEntityMixin": {
+      "attack": "Lnet/minecraft/world/entity/player/Player;m_5706_(Lnet/minecraft/world/entity/Entity;)V",
+      "tick": "Lnet/minecraft/world/entity/player/Player;m_8119_()V"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/VillagerEntityMixin": {
+      "updateSpecialPrices": "Lnet/minecraft/world/entity/npc/Villager;m_35540_(Lnet/minecraft/world/entity/player/Player;)V"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/EnchantmentHelperMixin": {
+      "getMobLooting": "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;m_44930_(Lnet/minecraft/world/entity/LivingEntity;)I"
+    },
+    "com/ibarnstormer/projectomnipotence/mixin/ItemMixin": {
+      "use": "Lnet/minecraft/world/item/Item;m_7203_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;"
+    }
+  },
+  "data": {
+    "searge": {
+      "com/ibarnstormer/projectomnipotence/mixin/EntityMixin": {
+        "isAlliedTo(Lnet/minecraft/world/entity/Entity;)Z": "Lnet/minecraft/world/entity/Entity;m_7307_(Lnet/minecraft/world/entity/Entity;)Z"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/LivingEntityMixin": {
+        "addAdditionalSaveData": "Lnet/minecraft/world/entity/LivingEntity;m_7380_(Lnet/minecraft/nbt/CompoundTag;)V",
+        "defineSynchedData": "Lnet/minecraft/world/entity/LivingEntity;m_8097_()V",
+        "dropAllDeathLoot": "Lnet/minecraft/world/entity/LivingEntity;m_6668_(Lnet/minecraft/world/damagesource/DamageSource;)V",
+        "tick": "Lnet/minecraft/world/entity/LivingEntity;m_8119_()V",
+        "readAdditionalSaveData": "Lnet/minecraft/world/entity/LivingEntity;m_7378_(Lnet/minecraft/nbt/CompoundTag;)V",
+        "canAttack(Lnet/minecraft/world/entity/LivingEntity;)Z": "Lnet/minecraft/world/entity/LivingEntity;m_6779_(Lnet/minecraft/world/entity/LivingEntity;)Z",
+        "hurt": "Lnet/minecraft/world/entity/LivingEntity;m_6469_(Lnet/minecraft/world/damagesource/DamageSource;F)Z"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/LivingEntityInvoker": {
+        "dropAllDeathLoot": "m_6668_(Lnet/minecraft/world/damagesource/DamageSource;)V",
+        "dropCustomDeathLoot": "m_7472_(Lnet/minecraft/world/damagesource/DamageSource;IZ)V"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/PlayerEntityMixin": {
+        "attack": "Lnet/minecraft/world/entity/player/Player;m_5706_(Lnet/minecraft/world/entity/Entity;)V",
+        "tick": "Lnet/minecraft/world/entity/player/Player;m_8119_()V"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/VillagerEntityMixin": {
+        "updateSpecialPrices": "Lnet/minecraft/world/entity/npc/Villager;m_35540_(Lnet/minecraft/world/entity/player/Player;)V"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/EnchantmentHelperMixin": {
+        "getMobLooting": "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;m_44930_(Lnet/minecraft/world/entity/LivingEntity;)I"
+      },
+      "com/ibarnstormer/projectomnipotence/mixin/ItemMixin": {
+        "use": "Lnet/minecraft/world/item/Item;m_7203_(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;"
+      }
+    }
+  }
+}

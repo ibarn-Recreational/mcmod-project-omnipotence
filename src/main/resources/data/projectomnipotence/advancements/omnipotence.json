@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:book",
+      "nbt": "{Enchantments:[{}]}"
+    },
+    "title": "Omnipotence",
+    "description": "All is one and one is all",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "parent": "minecraft:adventure/root",
+  "criteria": {
+    "requirement": {
+      "trigger": "minecraft:tick",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "type": "minecraft:player",
+              "nbt": "{ForgeCaps:{\"projectomnipotence:persistent_player_data\": {isOmnipotent:1b}}}"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

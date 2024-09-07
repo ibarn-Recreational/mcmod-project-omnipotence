@@ -1,0 +1,8 @@
+{
+  "type": "projectomnipotence:forgotten_ruins",
+  "config": {
+  },
+  "biomes": "#projectomnipotence:has_structure/forgotten_ruins",
+  "adapt_noise": false,
+  "spawn_overrides": {}
+}
