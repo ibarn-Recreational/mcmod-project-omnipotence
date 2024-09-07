@@ -1,0 +1,8 @@
+{
+  "type": "projectomnipotence:nether_shrine",
+  "config": {
+  },
+  "biomes": "#projectomnipotence:has_structure/nether_shrine",
+  "adapt_noise": false,
+  "spawn_overrides": {}
+}

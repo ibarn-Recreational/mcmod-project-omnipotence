@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "projectomnipotence:nether_shrine",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "separation": 16,
+    "spacing": 64,
+    "salt": 1621815507
+  }
+}
