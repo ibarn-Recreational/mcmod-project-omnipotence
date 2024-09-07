@@ -1,0 +1,13 @@
+{
+  "advancement.projectomnipotence.omnipotence": "Omnipotence",
+  "advancement.projectomnipotence.omnipotence.desc": "All is one and one is all",
+  "item.projectomnipotence.tome_of_truth": "Tome of the Truth",
+  "item.projectomnipotence.tome_of_lies": "Tome of Lies",
+  "message.projectomnipotence.ascend": "You start to feel as if you were in complete harmony with the world around you...",
+  "message.projectomnipotence.descend": "The feeling of being one with all starts to fade away...",
+  "message.projectomnipotence.failed_descend": "You see past the lies and remain in complete harmony.",
+  "message.projectomnipotence.attunement": "You become more attuned with the world...",
+  "message.projectomnipotence.invulnerability": "The feeling of vulnerability begins to fade away...",
+  "message.projectomnipotence.flight": "You start to feel weightless...",
+  "itemGroup.projectomnipotence.tab": "Project Omnipotence"
+}

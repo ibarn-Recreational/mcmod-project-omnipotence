@@ -10,7 +10,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.registry.tag.EnchantmentTags;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -35,7 +37,7 @@ public class ItemMixin {
             } else if (!nbt.getNbt().getBoolean("isPOTome") && POUtils.isOmnipotent(user)) {
                 if (Main.CONFIG.permaOmnipotents.containsKey(user.getNameForScoreboard()) || Main.CONFIG.permaOmnipotents.containsKey("*") || POUtils.isTrueEnlightened(user)) {
                     if (!world.isClient)
-                        user.sendMessage(Text.of("§eYou see past the lies and remain in complete harmony."), false);
+                        user.sendMessage(Text.translatable("message.projectomnipotence.failed_descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                     cir.setReturnValue(TypedActionResult.fail(stack));
                 } else {
                     POUtils.revokeOmnipotence(user);

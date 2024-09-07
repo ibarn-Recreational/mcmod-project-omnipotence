@@ -41,7 +41,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -133,14 +135,14 @@ public class POUtils {
     public static void grantOmnipotence(PlayerEntity player, boolean isCopyFrom) {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), true);
         if(player.getWorld() instanceof ServerWorld serverWorld && !isCopyFrom) {
-            player.sendMessage(Text.of("§eYou start to feel as if you were in complete harmony with the world around you..."), false);
+            player.sendMessage(Text.translatable("message.projectomnipotence.ascend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
             serverWorld.spawnParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getLengthY() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
     }
 
     public static void revokeOmnipotence(PlayerEntity player) {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), false);
-        if(!player.getWorld().isClient()) player.sendMessage(Text.of("§eThe feeling of being one with all starts to fade away..."), false);
+        if(!player.getWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
         if(Main.CONFIG.omnipotentPlayersGlow && player.hasStatusEffect(StatusEffects.GLOWING)) player.removeStatusEffect(StatusEffects.GLOWING);
         boolean inSurvival = !player.isSpectator() && !player.isCreative();
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {

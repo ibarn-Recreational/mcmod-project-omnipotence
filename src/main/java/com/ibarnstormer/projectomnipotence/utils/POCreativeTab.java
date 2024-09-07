@@ -20,7 +20,7 @@ public class POCreativeTab {
     public static void init() {
         Registry.register(Registries.ITEM_GROUP, Identifier.of(Main.MODID, "tab"), FabricItemGroup.builder()
                 .icon(() -> TOME_OF_TRUTH)
-                .displayName(Text.literal("Project Omnipotence"))
+                .displayName(Text.translatable("itemGroup.projectomnipotence.tab"))
                 .entries((ctx, entries) -> {
                     entries.add(TOME_OF_TRUTH);
                     entries.add(TOME_OF_LIES);
@@ -35,7 +35,7 @@ public class POCreativeTab {
         TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_DATA, totNbt);
         TOME_OF_TRUTH.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         TOME_OF_TRUTH.set(DataComponentTypes.RARITY, Rarity.EPIC);
-        TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Tome of the Truth").fillStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_truth").fillStyle(Style.EMPTY.withItalic(false)));
 
         TOME_OF_LIES = new ItemStack(Items.BOOK);
 
@@ -44,7 +44,7 @@ public class POCreativeTab {
         TOME_OF_LIES.set(DataComponentTypes.CUSTOM_DATA, tolNbt);
         TOME_OF_LIES.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         TOME_OF_LIES.set(DataComponentTypes.RARITY, Rarity.EPIC);
-        TOME_OF_LIES.set(DataComponentTypes.CUSTOM_NAME, Text.literal("Tome of Lies").fillStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_LIES.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_lies").fillStyle(Style.EMPTY.withItalic(false)));
 
     }
 

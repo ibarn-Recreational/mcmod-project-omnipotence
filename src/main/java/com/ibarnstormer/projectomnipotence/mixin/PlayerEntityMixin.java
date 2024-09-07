@@ -25,7 +25,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -208,13 +210,13 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 if(score > 0 && eeDelta == 0) eeDelta = score;
 
                 if (score > this.eeDelta && Math.ceil((double) score / Main.CONFIG.luckLevelEntityGoal) > Math.ceil((double) this.eeDelta / Main.CONFIG.luckLevelEntityGoal) && score < (Main.CONFIG.totalLuckLevels + 1) * Main.CONFIG.luckLevelEntityGoal && score > Main.CONFIG.luckLevelEntityGoal) {
-                    player.sendMessage(Text.of("§eYou become more attuned with the world..."), false);
+                    player.sendMessage(Text.translatable("message.projectomnipotence.attunement").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                 }
                 if (score > this.eeDelta && score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && eeDelta < Main.CONFIG.invulnerabilityEntityGoal) {
-                    player.sendMessage(Text.of("§eThe feeling of vulnerability begins to fade away..."), false);
+                    player.sendMessage(Text.translatable("message.projectomnipotence.invulnerability").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                 }
                 if (score > this.eeDelta && score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && eeDelta < Main.CONFIG.flightEntityGoal) {
-                    player.sendMessage(Text.of("§eYou start to feel weightless..."), false);
+                    player.sendMessage(Text.translatable("message.projectomnipotence.flight").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                 }
 
                 this.eeDelta = score;
