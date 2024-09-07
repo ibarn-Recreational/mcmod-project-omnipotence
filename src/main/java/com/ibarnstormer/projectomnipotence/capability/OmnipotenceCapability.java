@@ -1,9 +1,11 @@
 package com.ibarnstormer.projectomnipotence.capability;
 
 import com.ibarnstormer.projectomnipotence.Main;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
@@ -28,10 +30,10 @@ public class OmnipotenceCapability {
         if (level instanceof ServerLevel server) {
             if(this.isOmnipotent && showVisuals) {
                 server.sendParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getYsize() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * player.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * player.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
-                player.displayClientMessage(Component.literal("§eYou start to feel as if you were in complete harmony with the world around you..."), false);
+                player.displayClientMessage(Component.translatable("message.projectomnipotence.ascend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
             }
             else if(!this.isOmnipotent) {
-                if(showVisuals) player.displayClientMessage(Component.literal("§eThe feeling of being one with all starts to fade away..."), false);
+                if(showVisuals) player.displayClientMessage(Component.translatable("message.projectomnipotence.descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 if(Main.CONFIG.omnipotentPlayersGlow && player.hasEffect(MobEffects.GLOWING)) player.removeEffect(MobEffects.GLOWING);
                 boolean inSurvival = !player.isSpectator() && !player.isCreative();
                 if(Main.CONFIG.omnipotentPlayersCanGainFlight && enlightenedEntities >= Main.CONFIG.flightEntityGoal && inSurvival) {

@@ -34,19 +34,19 @@ public class ModCreativeTab {
         truthTomeNbt.put("Enchantments", list);
         truthTomeNbt.putBoolean("isPOTome", true);
         TOME_OF_TRUTH.setTag(truthTomeNbt);
-        TOME_OF_TRUTH.setHoverName(Component.literal("Tome of the Truth").setStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_TRUTH.setHoverName(Component.translatable("item.projectomnipotence.tome_of_truth").setStyle(Style.EMPTY.withItalic(false)));
 
         TOME_OF_LIES = new ItemStack(Items.BOOK);
         CompoundTag liesTomeNbt = new CompoundTag();
         liesTomeNbt.put("Enchantments", list);
         liesTomeNbt.putBoolean("isPOTomeReverse", true);
         TOME_OF_LIES.setTag(liesTomeNbt);
-        TOME_OF_LIES.setHoverName(Component.literal("Tome of Lies").setStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_LIES.setHoverName(Component.translatable("item.projectomnipotence.tome_of_lies").setStyle(Style.EMPTY.withItalic(false)));
 
         MOD_TAB = MOD_TAB_REGISTRY.register("tab", () ->
             CreativeModeTab.builder()
                     .icon(() -> TOME_OF_TRUTH)
-                    .title(Component.literal("Project Omnipotence"))
+                    .title(Component.translatable("itemGroup.projectomnipotence.tab"))
                     .displayItems((params, output) -> {
                         output.accept(TOME_OF_TRUTH);
                         output.accept(TOME_OF_LIES);

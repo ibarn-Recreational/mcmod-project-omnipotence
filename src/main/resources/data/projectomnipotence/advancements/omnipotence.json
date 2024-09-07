@@ -4,8 +4,12 @@
       "item": "minecraft:book",
       "nbt": "{Enchantments:[{}]}"
     },
-    "title": "Omnipotence",
-    "description": "All is one and one is all",
+    "title": {
+      "translate": "advancement.projectomnipotence.omnipotence"
+    },
+    "description": {
+      "translate": "advancement.projectomnipotence.omnipotence.desc"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,

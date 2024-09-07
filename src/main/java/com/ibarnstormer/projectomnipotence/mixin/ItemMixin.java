@@ -3,7 +3,9 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
@@ -35,7 +37,7 @@ public class ItemMixin {
                 } else if (stack.getTag().contains("isPOTomeReverse") && cap.isOmnipotent()) {
                     if(Main.CONFIG.permaOmnipotents.containsKey(user.getScoreboardName()) || Main.CONFIG.permaOmnipotents.containsKey("*") || Utils.isTrueEnlightened(user)) {
                         if (!level.isClientSide)
-                            user.displayClientMessage(Component.literal("§eYou see past the lies and remain in complete harmony."), false);
+                            user.displayClientMessage(Component.translatable("message.projectomnipotence.failed_descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                         cir.setReturnValue(InteractionResultHolder.fail(stack));
                     }
                     else {

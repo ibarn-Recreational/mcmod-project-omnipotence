@@ -5,8 +5,10 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -106,13 +108,13 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 if(score > 0 && eeDelta == 0) eeDelta = score;
 
                 if(score > this.eeDelta && Math.ceil((double) score / Main.CONFIG.luckLevelEntityGoal) > Math.ceil((double) this.eeDelta / Main.CONFIG.luckLevelEntityGoal) && score < (Main.CONFIG.totalLuckLevels + 1) * Main.CONFIG.luckLevelEntityGoal && score > Main.CONFIG.luckLevelEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.literal("§eYou become more attuned with the world..."), false);
+                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.attunement").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
                 if(score > this.eeDelta && score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && eeDelta < Main.CONFIG.invulnerabilityEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.literal("§eThe feeling of vulnerability begins to fade away..."), false);
+                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.invulnerability").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
                 if(score > this.eeDelta && score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && eeDelta < Main.CONFIG.flightEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.literal("§eYou start to feel weightless..."), false);
+                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.flight").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
 
                 this.eeDelta = score;
