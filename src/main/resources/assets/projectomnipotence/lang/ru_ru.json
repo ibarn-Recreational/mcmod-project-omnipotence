@@ -1,0 +1,13 @@
+{
+  "advancement.projectomnipotence.omnipotence": "Всемогущество",
+  "advancement.projectomnipotence.omnipotence.desc": "Всё есть одно, и одно есть всё",
+  "item.projectomnipotence.tome_of_truth": "Том Истины",
+  "item.projectomnipotence.tome_of_lies": "Том Лжы",
+  "message.projectomnipotence.ascend": "Вы чувствуете что вы сблизились к своему высшему Я...",
+  "message.projectomnipotence.descend": "Вы снова вступили в лабиринт Майи...",
+  "message.projectomnipotence.failed_descend": "Иллюзии Майи не действуют на тебя.",
+  "message.projectomnipotence.attunement": "Вы больше сблизились к своему высшему Я...",
+  "message.projectomnipotence.invulnerability": "Чувство уязвимости покидает тебя...",
+  "message.projectomnipotence.flight": "Вы чувствуете легкость в теле...",
+  "itemGroup.projectomnipotence.tab": "Проект Всемогущество"
+}
