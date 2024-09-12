@@ -142,7 +142,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         Player player = (Player) (Object) this;
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             Level world = player.level();
-            if (cap.isOmnipotent() && !source.type().equals(Utils.antiBadActorDamage(world).type())) {
+            if (cap.isOmnipotent()) {
                 if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClientSide() && !player.getAbilities().mayfly && player.getY() <= world.getMinBuildHeight()) {
                     MinecraftServer server = player.getServer();
                     if(server != null) {
@@ -153,7 +153,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     }
                 }
 
-                if(cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal) cir.setReturnValue(false);
+                if(cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) cir.setReturnValue(false);
                 if (source.getEntity() != null) {
                     AtomicBoolean attackerIsOmnipotent = new AtomicBoolean(false);
                     source.getEntity().getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(c -> attackerIsOmnipotent.set(c.isOmnipotent()));

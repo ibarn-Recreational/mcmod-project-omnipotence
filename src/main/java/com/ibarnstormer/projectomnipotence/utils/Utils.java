@@ -180,13 +180,6 @@ public class Utils {
         return d.get();
     }
 
-    public static DamageSource antiBadActorDamage(Level world) {
-        ResourceKey<DamageType> type = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(Main.MODID, "anti_bad_actor"));
-        Optional<Registry<DamageType>> registry = world.registryAccess().registry(Registries.DAMAGE_TYPE);
-        if(registry.isPresent()) return new DamageSource(registry.get().getHolderOrThrow(type));
-        else throw new NullPointerException("Provided damage id does not exist or cannot be found.");
-    }
-
     public static void respawnPlayer(ServerPlayer player) {
         // Sanity check
         if (!player.level().isClientSide()) {

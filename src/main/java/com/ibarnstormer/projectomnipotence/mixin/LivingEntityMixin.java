@@ -1,5 +1,6 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
+import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
@@ -91,6 +92,16 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
                 }
             });
         }
+    }
+    
+    @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
+    public void omniInvulnerability(float p_21154_, CallbackInfo ci) {
+        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
+            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && p_21154_ < thisEntity.getHealth()) {
+                ci.cancel();
+            }
+        });
     }
 
     @Inject(method = "tick", at = @At("HEAD"))

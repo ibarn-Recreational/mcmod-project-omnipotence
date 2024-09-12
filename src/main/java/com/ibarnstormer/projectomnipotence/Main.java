@@ -4,6 +4,8 @@ import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.config.ModConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.event.ModEvents;
+import com.ibarnstormer.projectomnipotence.mixin.EntityAccessor;
+import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
 import com.ibarnstormer.projectomnipotence.network.ModNetwork;
 import com.ibarnstormer.projectomnipotence.registry.ModCreativeTab;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
@@ -91,6 +93,10 @@ public class Main
                                 .then(Commands.argument("target", EntityArgument.player())
                                 .then(Commands.argument("amount", IntegerArgumentType.integer())
                                     .executes(this::setEntitiesEnlightened)))))
+                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("removeBadActor")
+                        .requires(cx -> cx.hasPermission(2))
+                        .then(Commands.argument("target", EntityArgument.player())
+                                .executes(this::removeBadActor)))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("setEnlightened")
                         .requires(cx -> cx.hasPermission(2))
                         .then(Commands.argument("target", EntityArgument.entity())
@@ -175,6 +181,20 @@ public class Main
             }
             else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
         }
+        return 1;
+    }
+
+    private int removeBadActor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        Player target = EntityArgument.getPlayer(context, "target");
+        target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
+            if(cap.isOmnipotent()) {
+                ((EntityAccessor) target).getEntityData().set(LivingEntityInvoker.getHealthID(), 0.0F);
+                context.getSource().sendSuccess(() -> Component.literal("Removed " + target.getScoreboardName() + "."), true);
+            }
+            else {
+                context.getSource().sendFailure(Component.literal("Player is not an omnipotent, use /kill."));
+            }
+        });
         return 1;
     }
 
