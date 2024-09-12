@@ -20,8 +20,7 @@ public class KillCommandMixin {
     // Against bad actors
     @Inject(method = "execute", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;kill()V"), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     private static void killCommand$execute(ServerCommandSource source, Collection<? extends Entity> targets, CallbackInfoReturnable<Integer> cir, Iterator var2, Entity entity) {
-        if(POUtils.isInHarmony(entity) && entity instanceof LivingEntity livingEntity && entity.isAlive()) {
-            livingEntity.damage(POUtils.antiBadActorDamage(entity.getWorld()), Float.MAX_VALUE);
+        if(POUtils.isInHarmony(entity) && entity instanceof LivingEntity && entity.isAlive()) {
             cir.cancel();
         }
     }

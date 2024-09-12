@@ -21,7 +21,7 @@ public class POClientPlayNetworkHandler {
                 player.writeNbt(nbt);
 
                 nbt.putBoolean("isOmnipotent", isOmnipotent);
-                nbt.putInt("entitiesEnlightened", entitiesEnlightened);
+                nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
 
                 player.readNbt(nbt);
             }

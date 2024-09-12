@@ -70,7 +70,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
     public void playerEntity$damage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
         World world = player.getWorld();
-        if (POUtils.isOmnipotent(player) && !source.getType().equals(POUtils.antiBadActorDamage(world).getType())) {
+        if (POUtils.isOmnipotent(player)) {
             if(source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClient() && !player.getAbilities().allowFlying && player.getY() <= world.getBottomY()) {
                 MinecraftServer server = player.getServer();
                 if(server != null) {
@@ -81,7 +81,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 }
             }
 
-            if(POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal) cir.setReturnValue(false);
+            if(POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) cir.setReturnValue(false);
             if (source.getAttacker() != null) {
                 if ((!(source.getAttacker() instanceof PlayerEntity) || ((source.getAttacker() instanceof PlayerEntity playerAttacker) && !POUtils.isOmnipotent(playerAttacker))) && Main.CONFIG.omnipotentPlayersReflectDamage) {
                     if(Main.CONFIG.damageReflectionBlackList.contains(Registries.ENTITY_TYPE.getId(source.getAttacker().getType()).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {

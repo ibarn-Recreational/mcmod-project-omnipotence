@@ -1,5 +1,6 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
+import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.advancement.criterion.Criteria;
@@ -79,6 +80,16 @@ public abstract class LivingEntityMixin extends EntityMixin {
             }
             if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !playerAttacker.isCreative()) {
                 cir.setReturnValue(false);
+            }
+        }
+    }
+
+    @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$setHealth(float health, CallbackInfo ci) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        if(thisEntity instanceof PlayerEntity player) {
+            if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < player.getHealth()) {
+                ci.cancel();
             }
         }
     }

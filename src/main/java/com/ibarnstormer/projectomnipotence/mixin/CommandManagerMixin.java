@@ -51,6 +51,10 @@ public abstract class CommandManagerMixin {
                             .then(argument("target", EntityArgumentType.player())
                             .then(argument("amount", IntegerArgumentType.integer())
                                 .executes(this::setEntitiesEnlightened)))))
+                .then(literal("removeBadActor")
+                        .requires(source -> source.hasPermissionLevel(2))
+                        .then(argument("target", EntityArgumentType.player())
+                            .executes(this::removeBadActor)))
                 .then(literal("setEnlightened")
                         .requires(source -> source.hasPermissionLevel(2))
                         .then(argument("target", EntityArgumentType.entity())
@@ -133,6 +137,21 @@ public abstract class CommandManagerMixin {
             }
             else context.getSource().sendFeedback(() -> Text.literal(target.getName().getString() + " is already not " + "an Omnipotent."), false);
         }
+        return 1;
+    }
+
+    @Unique
+    private int removeBadActor(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+        PlayerEntity player = EntityArgumentType.getPlayer(context, "target");
+
+        if(POUtils.isOmnipotent(player)) {
+            ((EntityAccessor) player).getDataTracker().set(LivingEntityInvoker.getHealthID(), 0.0F);
+            context.getSource().sendFeedback(() -> Text.literal("Removed " + player.getNameForScoreboard() + "."), true);
+        }
+        else {
+            context.getSource().sendError(Text.literal("Player is not an omnipotent, use /kill."));
+        }
+
         return 1;
     }
 

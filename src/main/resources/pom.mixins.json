@@ -11,6 +11,7 @@
     "BucketableMixin",
     "CommandManagerMixin",
     "EnchantmentHelperMixin",
+    "EntityAccessor",
     "EntityBucketItemMixin",
     "EntityMixin",
     "FleeEntityGoalMixin",
@@ -30,6 +31,7 @@
     "defaultRequire": 1
   },
   "client": [
-    "ClientPlayerEntityMixin"
+    "ClientPlayerEntityMixin",
+    "InGameHudMixin"
   ]
 }

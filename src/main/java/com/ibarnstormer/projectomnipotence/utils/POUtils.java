@@ -166,6 +166,12 @@ public class POUtils {
         return ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
     }
 
+    public static int getEntitiesEnlightenedClient(PlayerEntity player) {
+        NbtCompound nbt = new NbtCompound();
+        player.writeNbt(nbt);
+        return nbt.getInt("EntitiesEnlightened");
+    }
+
     public static void setEntitiesEnlightened(PlayerEntity player, int value) {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), value);
         boolean inSurvival = !player.isSpectator() && !player.isCreative();
@@ -331,11 +337,6 @@ public class POUtils {
 
     public static double getLuckLevel(PlayerEntity player) {
         return Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
-    }
-
-    public static DamageSource antiBadActorDamage(World world) {
-        RegistryKey<DamageType> type = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Identifier.of(Main.MODID, "anti_bad_actor"));
-        return new DamageSource(world.getRegistryManager().get(RegistryKeys.DAMAGE_TYPE).entryOf(type));
     }
 
     public static void respawnPlayer(ServerPlayerEntity player) {
