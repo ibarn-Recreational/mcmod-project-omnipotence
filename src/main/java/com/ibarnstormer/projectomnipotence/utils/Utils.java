@@ -69,7 +69,7 @@ public class Utils {
     }
 
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_, @Nullable OmnipotenceCapability cap) {
-        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience();
@@ -126,7 +126,7 @@ public class Utils {
     }
 
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, @Nullable OmnipotenceCapability cap) {
-        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
             if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
 
