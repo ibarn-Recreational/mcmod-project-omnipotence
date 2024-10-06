@@ -127,7 +127,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 if(!POUtils.isInHarmony(le) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
                     POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
                 }
-                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
+                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
                     EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
                     if(conversionType != null) {
                         Entity e = conversionType.create(player.getWorld());

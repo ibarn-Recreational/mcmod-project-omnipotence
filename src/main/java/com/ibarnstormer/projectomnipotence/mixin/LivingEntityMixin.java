@@ -88,7 +88,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
     public void livingEntity$setHealth(float health, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
         if(thisEntity instanceof PlayerEntity player) {
-            if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < player.getHealth()) {
+            if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < player.getMaxHealth()) {
                 ci.cancel();
             }
         }
