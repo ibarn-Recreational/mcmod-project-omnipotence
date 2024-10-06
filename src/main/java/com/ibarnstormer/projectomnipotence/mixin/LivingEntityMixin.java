@@ -98,7 +98,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     public void omniInvulnerability(float p_21154_, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity)(Object) this;
         thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
-            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && p_21154_ < thisEntity.getHealth()) {
+            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && p_21154_ < thisEntity.getMaxHealth()) {
                 ci.cancel();
             }
         });

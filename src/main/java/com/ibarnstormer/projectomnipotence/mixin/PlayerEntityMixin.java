@@ -204,7 +204,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
                         Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
                     }
-                    else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
+                    else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
                         EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                         if(conversionType != null) {
                             Entity e = conversionType.create(player.level());
