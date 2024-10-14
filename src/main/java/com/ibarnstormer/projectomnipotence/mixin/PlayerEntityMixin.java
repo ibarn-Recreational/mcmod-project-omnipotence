@@ -7,6 +7,7 @@ import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
@@ -32,7 +33,6 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -97,7 +97,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 else if (luckModifier != null) {
                     double currentLevel = Utils.getLuckLevel(player);
                     if(luckModifier.getAmount() != currentLevel) {
-                        playerLuck.removeModifier(luckModifier);
+                        playerLuck.removeModifier(luckModifier.getId());
                         playerLuck.addPermanentModifier(new AttributeModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002"), "Omnipotent Luck", currentLevel, AttributeModifier.Operation.ADDITION));
                     }
                 }
@@ -158,7 +158,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     AtomicBoolean attackerIsOmnipotent = new AtomicBoolean(false);
                     source.getEntity().getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(c -> attackerIsOmnipotent.set(c.isOmnipotent()));
                     if (Main.CONFIG.omnipotentPlayersReflectDamage && !attackerIsOmnipotent.get()) {
-                        if(Main.CONFIG.damageReflectionBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(source.getEntity().getType())).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
+                        if(Main.CONFIG.damageReflectionBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(source.getEntity().getType())).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
                             source.getEntity().hurt(source.getEntity().damageSources().generic(), amount);
                         }
                         else source.getEntity().hurt(source, amount);
@@ -200,12 +200,12 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
                 // If we want to simply remove stubborn entities
                 for(LivingEntity le : list) {
-                    String entityID = Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(le.getType())).toString();
+                    String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(le.getType())).toString();
                     if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
                         Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
                     }
                     else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
-                        EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
+                        EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                         if(conversionType != null) {
                             Entity e = conversionType.create(player.level());
                             if(le instanceof Mob mob && e instanceof Mob) {

@@ -9,15 +9,15 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class ModCreativeTab {
 
     public static final DeferredRegister<CreativeModeTab> MOD_TAB_REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Main.MODID);
 
-    public static final RegistryObject<CreativeModeTab> MOD_TAB;
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MOD_TAB;
     public static final ItemStack TOME_OF_TRUTH, TOME_OF_LIES;
 
 

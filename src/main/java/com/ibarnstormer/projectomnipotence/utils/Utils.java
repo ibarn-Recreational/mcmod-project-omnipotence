@@ -11,6 +11,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -37,7 +38,7 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -69,7 +70,7 @@ public class Utils {
     }
 
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_, @Nullable OmnipotenceCapability cap) {
-        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience();
@@ -77,7 +78,7 @@ public class Utils {
             if(playerAttacker != null) ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
-            if(!net.minecraftforge.common.ForgeHooks.onLivingDrops(thisEntity, p_21016_, drops, playerAttacker == null ? 0 : EnchantmentHelper.getMobLooting(playerAttacker), true)) {
+            if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, playerAttacker == null ? 0 : EnchantmentHelper.getMobLooting(playerAttacker), true)) {
                 drops.forEach(e -> thisEntity.level().addFreshEntity(e));
             }
 
@@ -103,14 +104,14 @@ public class Utils {
             }
 
             thisEntity.setLastHurtByPlayer(null);
-            net.minecraftforge.common.ForgeHooks.onLivingDeath(thisEntity, p_21016_);
+            net.neoforged.neoforge.common.CommonHooks.onLivingDeath(thisEntity, p_21016_);
             if (thisEntity instanceof Mob mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
                 mob.targetSelector.removeAllGoals(goal -> goal instanceof NearestAttackableTargetGoal || goal instanceof HurtByTargetGoal);
             }
 
-            if(Main.CONFIG.removeOnEnlightenList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
+            if(Main.CONFIG.removeOnEnlightenList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 thisEntity.setSilent(true);
                 thisEntity.hurt(thisEntity.damageSources().fellOutOfWorld(), Float.MAX_VALUE);
                 thisEntity.remove(Entity.RemovalReason.DISCARDED);
@@ -126,7 +127,7 @@ public class Utils {
     }
 
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, @Nullable OmnipotenceCapability cap) {
-        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+        if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
             if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
 
@@ -135,7 +136,7 @@ public class Utils {
                 mob.setTarget(null);
                 mob.targetSelector.removeAllGoals(goal -> goal instanceof NearestAttackableTargetGoal || goal instanceof HurtByTargetGoal);
             }
-            String entityID = Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString();
+            String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString();
 
             if(Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 thisEntity.setSilent(true);
@@ -145,7 +146,7 @@ public class Utils {
             }
 
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
-                EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
+                EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                 if(conversionType != null) {
                     Entity e = conversionType.create(playerAttacker.level());
                     if(thisEntity instanceof Mob mob && e instanceof Mob) {

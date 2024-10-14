@@ -12,6 +12,7 @@
     "BeaconBlockEntityMixin",
     "BlockItemMixin",
     "BrainMixin",
+    "BucketableMixin",
     "EnchantmentHelperMixin",
     "EntityAccessor",
     "EntityMixin",

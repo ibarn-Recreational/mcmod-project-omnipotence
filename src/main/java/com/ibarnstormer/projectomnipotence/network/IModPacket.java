@@ -1,13 +1,14 @@
 package com.ibarnstormer.projectomnipotence.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 public interface IModPacket {
 
     void send(FriendlyByteBuf buf);
-    void handle(Supplier<NetworkEvent.Context> ctx);
+
+    static void handle(IModPacket packet, NetworkEvent.Context ctx) {}
 
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Mixin(Level.class)
 public class LevelMixin {
 
-    @ModifyVariable(method = "explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;Z)Lnet/minecraft/world/level/Explosion;", at = @At("HEAD"))
+    @ModifyVariable(method = "explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;Z)Lnet/minecraft/world/level/Explosion;", at = @At("HEAD"), argsOnly = true)
     public Level.ExplosionInteraction level$explode(Level.ExplosionInteraction i, @Nullable Entity p_46526_, @Nullable DamageSource p_46527_, @Nullable ExplosionDamageCalculator p_46528_, double p_46529_, double p_46530_, double p_46531_, float p_46532_, boolean p_46533_, Level.ExplosionInteraction p_46534_, boolean p_46535_) {
         Level level = (Level) (Object) this;
         BlockPos pos = BlockPos.containing(p_46529_, p_46530_, p_46531_);

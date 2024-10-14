@@ -3,9 +3,7 @@ package com.ibarnstormer.projectomnipotence.network;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.neoforged.neoforge.network.NetworkEvent;
 
 public class UpdateModCapabilitiesPacket implements IModPacket {
 
@@ -27,17 +25,17 @@ public class UpdateModCapabilitiesPacket implements IModPacket {
         buf.writeInt(enlightenedEntities);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> {
+    public static void handle(UpdateModCapabilitiesPacket packet, NetworkEvent.Context ctx) {
+        ctx.enqueueWork(() -> {
             // Client-side updates
             if(Minecraft.getInstance().player != null) {
                 Minecraft.getInstance().player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                    cap.setOmnipotent(this.isOmnipotent);
-                    cap.setEnlightenedEntities(this.enlightenedEntities);
+                    cap.setOmnipotent(packet.isOmnipotent);
+                    cap.setEnlightenedEntities(packet.enlightenedEntities);
                 });
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
 

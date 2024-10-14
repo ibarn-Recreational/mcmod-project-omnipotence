@@ -22,12 +22,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
 
 import java.util.Objects;
@@ -40,15 +41,14 @@ public class Main
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final int CONFIG_VERSION = 2;
 
-    public Main()
+    public Main(IEventBus modEventBus)
     {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModCreativeTab.init(modEventBus);
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
-        MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(new ModEvents());
-        MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
+        NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(ModEvents.class);
+        NeoForge.EVENT_BUS.addListener(this::registerCommands);
 
         // Check config values
         if(CONFIG.luckLevelEntityGoal <= 0) {
@@ -72,10 +72,12 @@ public class Main
         }
     }
 
+    @SubscribeEvent
     private void setup(final FMLCommonSetupEvent e) {
         ModNetwork.initNetwork();
     }
 
+    @SubscribeEvent
     public void registerCommands(final RegisterCommandsEvent e) {
         e.getDispatcher().register(LiteralArgumentBuilder.<CommandSourceStack>literal("projectOmnipotence")
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("checkEntitiesEnlightened")
