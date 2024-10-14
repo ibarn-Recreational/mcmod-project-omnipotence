@@ -16,11 +16,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
+// NeoForge also does not support private static interface method injections...
 @Mixin(Bucketable.class)
 public interface BucketableMixin {
 
-    @Inject(method = "bucketMobPickup", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/animal/Bucketable;saveToBucketTag(Lnet/minecraft/world/item/ItemStack;)V"))
-    private static<T extends LivingEntity & Bucketable> void bucketable$bucketMobPickup(Player p_148829_, InteractionHand p_148830_, T p_148831_, CallbackInfoReturnable<Optional<InteractionResult>> cir, @Local(ordinal = 1) ItemStack $$4) {
+
+    //@Inject(method = "bucketMobPickup", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/animal/Bucketable;saveToBucketTag(Lnet/minecraft/world/item/ItemStack;)V"))
+    private static <T extends LivingEntity & Bucketable> void bucketable$bucketMobPickup(Player p_148829_, InteractionHand p_148830_, T p_148831_, CallbackInfoReturnable<Optional<InteractionResult>> cir, @Local(ordinal = 1) ItemStack $$4) {
         CompoundTag nbt = $$4.getTag();
         if(nbt != null && p_148831_ instanceof HarmonicEntity harmonicEntity) nbt.putBoolean("is_enlightened", harmonicEntity.getHarmonicState());
     }

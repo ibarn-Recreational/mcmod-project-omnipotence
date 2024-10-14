@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AbstractFish.class)
 public class AbstractFishMixin {
 
-    //@Inject(method = "saveToBucketTag", at = @At("RETURN"))
+    @Inject(method = "saveToBucketTag", at = @At("RETURN"))
     public void abstractFish$saveToBucketTag(ItemStack p_149187_, CallbackInfo ci) {
         AbstractFish entity = (AbstractFish) (Object) this;
         CompoundTag nbt = p_149187_.getTag();
