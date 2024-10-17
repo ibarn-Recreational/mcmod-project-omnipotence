@@ -3,7 +3,9 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
+import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
@@ -229,6 +231,9 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                     player.getAbilities().allowFlying = true;
                     player.sendAbilitiesUpdate();
                 }
+
+                // Update nbt on Client
+                if(player instanceof ServerPlayerEntity serverPlayer && serverPlayer.age % 20 == 0) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), POUtils.isOmnipotent(serverPlayer), POUtils.getEntitiesEnlightened(serverPlayer)));
 
             } else {
                 if (playerLuck.getModifier(OMNIPOTENT_LUCK) != null) {

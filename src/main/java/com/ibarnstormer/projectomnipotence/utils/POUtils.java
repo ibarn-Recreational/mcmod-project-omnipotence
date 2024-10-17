@@ -106,8 +106,6 @@ public class POUtils {
         nbt.putBoolean("isOmnipotent", isOmnipotent);
         nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
 
-        // Update nbt on Client
-        if(player instanceof ServerPlayerEntity serverPlayer) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), isOmnipotent, entitiesEnlightened));
     }
 
     private static TrackedData<Boolean> assignedEntityData(LivingEntity entity) {
@@ -138,6 +136,8 @@ public class POUtils {
             player.sendMessage(Text.translatable("message.projectomnipotence.ascend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
             serverWorld.spawnParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getLengthY() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
+        // Update nbt on Client
+        if(player instanceof ServerPlayerEntity serverPlayer) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), POUtils.isOmnipotent(serverPlayer), POUtils.getEntitiesEnlightened(serverPlayer)));
     }
 
     public static void revokeOmnipotence(PlayerEntity player) {
@@ -150,6 +150,9 @@ public class POUtils {
             player.getAbilities().flying = false;
             player.sendAbilitiesUpdate();
         }
+        // Update nbt on Client
+        if(player instanceof ServerPlayerEntity serverPlayer) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), POUtils.isOmnipotent(serverPlayer), POUtils.getEntitiesEnlightened(serverPlayer)));
+
     }
 
     public static boolean isOmnipotent(PlayerEntity player) {

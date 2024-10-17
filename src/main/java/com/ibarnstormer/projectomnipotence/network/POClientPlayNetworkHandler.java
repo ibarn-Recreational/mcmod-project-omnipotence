@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence.network;
 
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -18,12 +19,11 @@ public class POClientPlayNetworkHandler {
 
             if(player.getUuid().equals(profile.getId())) {
                 NbtCompound nbt = new NbtCompound();
-                player.writeNbt(nbt);
 
                 nbt.putBoolean("isOmnipotent", isOmnipotent);
                 nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
 
-                player.readNbt(nbt);
+                POUtils.readPlayerNbt(player, nbt);
             }
 
         }
