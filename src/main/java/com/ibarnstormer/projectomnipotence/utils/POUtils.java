@@ -14,13 +14,13 @@ import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ProjectileDeflection;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.conversion.EntityConversionContext;
+import net.minecraft.entity.conversion.EntityConversionType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.data.TrackedData;
@@ -31,7 +31,9 @@ import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -105,9 +107,6 @@ public class POUtils {
         int entitiesEnlightened = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
         nbt.putBoolean("isOmnipotent", isOmnipotent);
         nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
-
-        // Update nbt on Client
-        if(player instanceof ServerPlayerEntity serverPlayer) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), isOmnipotent, entitiesEnlightened));
     }
 
     private static TrackedData<Boolean> assignedEntityData(LivingEntity entity) {
@@ -138,6 +137,10 @@ public class POUtils {
             player.sendMessage(Text.translatable("message.projectomnipotence.ascend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
             serverWorld.spawnParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getLengthY() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
+        // Update on client
+        if(player instanceof ServerPlayerEntity serverPlayer) {
+            ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), isOmnipotent(player), getEntitiesEnlightened(player)));
+        }
     }
 
     public static void revokeOmnipotence(PlayerEntity player) {
@@ -149,6 +152,11 @@ public class POUtils {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
             player.sendAbilitiesUpdate();
+        }
+
+        // Update on client
+        if(player instanceof ServerPlayerEntity serverPlayer) {
+            ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), isOmnipotent(player), getEntitiesEnlightened(player)));
         }
     }
 
@@ -183,30 +191,30 @@ public class POUtils {
     }
 
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
-        if (!livingEntity.getWorld().isClient() && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+        if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
             livingEntity.setAttacking(playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropMobExperience(playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropLootTableLoot(source, true);
-            ((LivingEntityInvoker) livingEntity).dropEntityEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            ((LivingEntityInvoker) livingEntity).dropMobExperience(serverWorld, playerAttacker);
+            ((LivingEntityInvoker) livingEntity).dropLootTableLoot(serverWorld, source, true);
+            ((LivingEntityInvoker) livingEntity).dropEntityEquipment(serverWorld, livingEntity.getDamageSources().playerAttack(playerAttacker), true);
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.GENERIC_LUCK) * 2));
-                if(chance == 0) livingEntity.dropStack(new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
+                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
+                if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
             }
 
             if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.GENERIC_LUCK) * 2));
+                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
                 if(chance == 0) {
                     ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
 
                     // Should always work but catch just in case something goes wrong
                     try {
                         GoatEntity goat = (GoatEntity) livingEntity;
-                        GoatHornItem.setRandomInstrumentFromTag(goatHorn, goat.isScreaming() ? InstrumentTags.SCREAMING_GOAT_HORNS : InstrumentTags.REGULAR_GOAT_HORNS, livingEntity.getRandom());
+                        goatHorn = goat.getGoatHornStack();
                     }
                     catch (Exception ignored) {}
 
-                    livingEntity.dropStack(goatHorn);
+                    livingEntity.dropStack(serverWorld, goatHorn);
                 }
             }
 
@@ -219,16 +227,14 @@ public class POUtils {
 
             if(Main.CONFIG.removeOnEnlightenList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 livingEntity.setSilent(true);
-                livingEntity.damage(livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
+                livingEntity.damage(serverWorld, livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
                 livingEntity.remove(Entity.RemovalReason.DISCARDED);
                 livingEntity.getWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
             }
 
             setInHarmony(livingEntity, true);
             if(playerAttacker != null) setEntitiesEnlightened(playerAttacker, getEntitiesEnlightened(playerAttacker) + 1);
-            if (livingEntity.getWorld() instanceof ServerWorld serverWorld) {
-                serverWorld.spawnParticles(ParticleTypes.END_ROD, livingEntity.getX(), livingEntity.getY() + livingEntity.getBoundingBox().getLengthY() / 2, livingEntity.getZ(), 20, (Math.random() * livingEntity.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
-            }
+            serverWorld.spawnParticles(ParticleTypes.END_ROD, livingEntity.getX(), livingEntity.getY() + livingEntity.getBoundingBox().getLengthY() / 2, livingEntity.getZ(), 20, (Math.random() * livingEntity.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
     }
 
@@ -249,17 +255,17 @@ public class POUtils {
 
             if(Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 livingEntity.setSilent(true);
-                livingEntity.damage(livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
+                livingEntity.damage(serverWorld, livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
                 livingEntity.remove(Entity.RemovalReason.DISCARDED);
                 livingEntity.getWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
             }
 
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
                 EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
-                Entity e = conversionType.create(serverWorld);
+                Entity e = conversionType.create(serverWorld, SpawnReason.CONVERSION);
                 if(livingEntity instanceof MobEntity mob && e instanceof MobEntity) {
                     EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                    e = mob.convertTo(tMobType, true);
+                    e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
                     if(e instanceof LivingEntity tle) setInHarmony(tle, true);
                 }
                 else if(e != null) {
@@ -356,7 +362,7 @@ public class POUtils {
                     BlockPos finalPos1 = pos;
 
                     player.fallDistance = 0.0F;
-                    finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, player.getYaw(), player.getPitch()), () -> player.teleport(world, finalPos1.getX(), finalPos1.getY() + 1, finalPos1.getZ(), player.getYaw(), player.getPitch()));
+                    finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, PositionFlag.ROT, player.getYaw(), player.getPitch(), false), () -> player.teleport(world, finalPos1.getX(), finalPos1.getY() + 1, finalPos1.getZ(), PositionFlag.ROT, player.getYaw(), player.getPitch(), false));
                 }
             }
         }

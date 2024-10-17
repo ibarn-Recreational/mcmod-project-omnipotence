@@ -59,7 +59,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    public void livingEntity$damage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    public void livingEntity$damage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = (LivingEntity)(Object) this;
 
         if(source.getAttacker() instanceof PlayerEntity playerAttacker) {
@@ -107,7 +107,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
                 thisEntity.setVelocity(thisEntity.getVelocity().x, 2.0D, thisEntity.getVelocity().z);
                 if(thisEntity.getY() > thisEntity.getWorld().getHeight() && thisEntity.getWorld() instanceof ServerWorld serverWorld) {
                     serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.BLOCK_END_PORTAL_SPAWN, SoundCategory.MASTER, 500, 1);
-                    thisEntity.kill();
+                    thisEntity.kill(serverWorld);
                 }
             }
         }

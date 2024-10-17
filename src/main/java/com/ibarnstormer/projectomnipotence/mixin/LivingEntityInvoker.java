@@ -19,10 +19,10 @@ public interface LivingEntityInvoker {
     }
 
     @Invoker("dropXp")
-    void dropMobExperience(@Nullable Entity attacker);
+    void dropMobExperience(ServerWorld world, @Nullable Entity attacker);
 
     @Invoker("dropLoot")
-    void dropLootTableLoot(DamageSource source, boolean causedByPlayer);
+    void dropLootTableLoot(ServerWorld world, DamageSource source, boolean causedByPlayer);
 
     @Invoker("dropEquipment")
     void dropEntityEquipment(ServerWorld world, DamageSource source, boolean causedByPlayer);
