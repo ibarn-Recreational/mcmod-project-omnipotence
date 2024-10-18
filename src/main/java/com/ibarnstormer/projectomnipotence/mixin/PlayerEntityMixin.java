@@ -9,9 +9,12 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.conversion.EntityConversionContext;
+import net.minecraft.entity.conversion.EntityConversionType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
@@ -69,9 +72,8 @@ public abstract class PlayerEntityMixin extends EntityMixin {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    public void playerEntity$damage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    public void playerEntity$damage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        World world = player.getWorld();
         if (POUtils.isOmnipotent(player)) {
             if(source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClient() && !player.getAbilities().allowFlying && player.getY() <= world.getBottomY()) {
                 MinecraftServer server = player.getServer();
@@ -87,20 +89,20 @@ public abstract class PlayerEntityMixin extends EntityMixin {
             if (source.getAttacker() != null) {
                 if ((!(source.getAttacker() instanceof PlayerEntity) || ((source.getAttacker() instanceof PlayerEntity playerAttacker) && !POUtils.isOmnipotent(playerAttacker))) && Main.CONFIG.omnipotentPlayersReflectDamage) {
                     if(Main.CONFIG.damageReflectionBlackList.contains(Registries.ENTITY_TYPE.getId(source.getAttacker().getType()).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
-                        source.getAttacker().damage(source.getAttacker().getDamageSources().generic(), amount);
+                        source.getAttacker().damage(world, source.getAttacker().getDamageSources().generic(), amount);
                     }
-                    else source.getAttacker().damage(source, amount);
+                    else source.getAttacker().damage(world, source, amount);
                 }
             }
         }
     }
 
     @Inject(method = "damage", at = @At("TAIL"))
-    public void playerEntity$damage_onDeath(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    public void playerEntity$damage_onDeath(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
         if(POUtils.isOmnipotent(player) && player.isDead() && Main.CONFIG.omnipotentPlayersReflectDamage) {
             Entity attacker = source.getAttacker();
-            if(attacker != null) attacker.kill();
+            if(attacker != null) attacker.kill(world);
         }
     }
 
@@ -108,14 +110,14 @@ public abstract class PlayerEntityMixin extends EntityMixin {
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity) (Object) this;
         if(POUtils.isOmnipotent(player)) {
-            float f = (float) player.getAttributeValue(EntityAttributes.PLAYER_SWEEPING_DAMAGE_RATIO);
+            float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
 
             if(f > 0) {
                 list = player.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
                 for(LivingEntity entity : list) {
-                    if(entity != target) entity.damage(entity.getDamageSources().playerAttack(player), 0.0F);
+                    if(entity != target && player.getWorld() instanceof ServerWorld serverWorld) entity.damage(serverWorld, entity.getDamageSources().playerAttack(player), 0.0F);
                 }
 
                 player.spawnSweepAttackParticles();
@@ -132,10 +134,10 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
                     EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
                     if(conversionType != null) {
-                        Entity e = conversionType.create(player.getWorld());
+                        Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
                             EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                            e = mob.convertTo(tMobType, true);
+                            e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
                         }
                         else if(e != null) {
                             player.getWorld().spawnEntity(e);
@@ -169,7 +171,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 POUtils.setEntitiesEnlightened(player, Math.max((Math.min(10, Main.CONFIG.totalLuckLevels) * Main.CONFIG.luckLevelEntityGoal) + 1, POUtils.getEntitiesEnlightened(player)));
             }
 
-            EntityAttributeInstance playerLuck = player.getAttributeInstance(EntityAttributes.GENERIC_LUCK);
+            EntityAttributeInstance playerLuck = player.getAttributeInstance(EntityAttributes.LUCK);
             assert playerLuck != null;
 
             if (POUtils.isOmnipotent(player)) {
@@ -232,7 +234,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                     player.sendAbilitiesUpdate();
                 }
 
-                // Update nbt on Client
+                // Update nbt on client, send update each second
                 if(player instanceof ServerPlayerEntity serverPlayer && serverPlayer.age % 20 == 0) ServerPlayNetworking.send(serverPlayer, new SyncSSDHDataPayload(serverPlayer.getGameProfile(), POUtils.isOmnipotent(serverPlayer), POUtils.getEntitiesEnlightened(serverPlayer)));
 
             } else {

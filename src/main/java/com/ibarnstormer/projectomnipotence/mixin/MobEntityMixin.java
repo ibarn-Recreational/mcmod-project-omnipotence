@@ -3,6 +3,8 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.conversion.EntityConversionContext;
 import net.minecraft.entity.mob.MobEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,8 +29,8 @@ public class MobEntityMixin<T extends MobEntity> {
         if(POUtils.isInHarmony(target) && this.target == target) this.target = null;
     }
 
-    @Inject(method = "convertTo", at = @At("RETURN"), cancellable = true)
-    public void mobEntity$convertTo(EntityType<T> entityType, boolean keepEquipment, CallbackInfoReturnable<T> cir) {
+    @Inject(method = "convertTo(Lnet/minecraft/entity/EntityType;Lnet/minecraft/entity/conversion/EntityConversionContext;Lnet/minecraft/entity/SpawnReason;Lnet/minecraft/entity/conversion/EntityConversionContext$Finalizer;)Lnet/minecraft/entity/mob/MobEntity;", at = @At("RETURN"), cancellable = true)
+    public void mobEntity$convertTo(EntityType<T> entityType, EntityConversionContext context, SpawnReason reason, EntityConversionContext.Finalizer<T> finalizer, CallbackInfoReturnable<T> cir) {
         MobEntity thisMob = (MobEntity) (Object) this;
         if(POUtils.isInHarmony(thisMob)) {
             T converionResult = cir.getReturnValue();
