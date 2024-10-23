@@ -8,6 +8,7 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.ItemTags;
@@ -25,13 +26,11 @@ public class EnchantmentHelperMixin {
         if(POUtils.isInHarmony(attacker)) cir.setReturnValue(1.0F);
     }
 
-    @Inject(method = "getLevel", at = @At("RETURN"), cancellable = true)
-    private static void enchantmentHelper$getLevel(RegistryEntry<Enchantment> enchantment, ItemStack stack, CallbackInfoReturnable<Integer> cir) {
-        if(enchantment.value().definition().supportedItems().stream().anyMatch(i -> i.isIn(ItemTags.MINING_LOOT_ENCHANTABLE)) || enchantment.value().effects().contains(EnchantmentEffectComponentTypes.FISHING_LUCK_BONUS) || enchantment.value().effects().contains(EnchantmentEffectComponentTypes.EQUIPMENT_DROPS)) {
-            NbtComponent nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-            if (nbt.contains("eelevel")) {
-                cir.setReturnValue(cir.getReturnValueI() + nbt.getNbt().getInt("eelevel"));
-            }
+    @Inject(method = "getEquipmentLevel", at = @At("RETURN"), cancellable = true)
+    private static void enchantmentHelper$getEquipmentLevel(RegistryEntry<Enchantment> enchantment, LivingEntity entity, CallbackInfoReturnable<Integer> cir) {
+        if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player)) {
+            int eeLevel = POUtils.getLuckLevel(player);
+            cir.setReturnValue(cir.getReturnValueI() + eeLevel);
         }
     }
 }
