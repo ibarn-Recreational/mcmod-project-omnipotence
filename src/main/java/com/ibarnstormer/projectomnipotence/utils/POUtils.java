@@ -341,8 +341,8 @@ public class POUtils {
         }
     }
 
-    public static double getLuckLevel(PlayerEntity player) {
-        return Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
+    public static int getLuckLevel(PlayerEntity player) {
+        return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
     public static void respawnPlayer(ServerPlayerEntity player) {

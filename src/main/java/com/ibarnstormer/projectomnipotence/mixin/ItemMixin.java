@@ -50,24 +50,6 @@ public class ItemMixin {
     }
 
     @Inject(method = "inventoryTick", at = @At("HEAD"))
-    public void item$inventoryTick_addAdditionalFortuneLevels(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo ci) {
-        if(entity instanceof PlayerEntity player) {
-            NbtComponent nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-            if (POUtils.isOmnipotent(player)) {
-                int extraLevels = (int) POUtils.getLuckLevel(player);
-                if (!nbt.contains("eelevel") || (nbt.contains("eelevel") && nbt.getNbt().getInt("eelevel") != extraLevels)) {
-                    nbt = nbt.apply(newNbt -> newNbt.putInt("eelevel", extraLevels));
-                    stack.set(DataComponentTypes.CUSTOM_DATA, nbt);
-                }
-            }
-            else if (!POUtils.isOmnipotent(player) && nbt.contains("eelevel")) {
-                nbt = nbt.apply(newNbt -> newNbt.remove("eelevel"));
-                stack.set(DataComponentTypes.CUSTOM_DATA, nbt);
-            }
-        }
-    }
-
-    @Inject(method = "inventoryTick", at = @At("HEAD"))
     public void item$inventoryTick_removeCurses(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo ci) {
         if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersRemoveCurses) {
             EnchantmentHelper.apply(stack, c -> c.remove(e -> e.isIn(EnchantmentTags.CURSE)));
