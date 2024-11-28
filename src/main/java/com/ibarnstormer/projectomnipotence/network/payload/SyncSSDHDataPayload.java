@@ -12,7 +12,7 @@ public record SyncSSDHDataPayload(GameProfile profile, boolean isOmnipotent, int
     public static final CustomPayload.Id<SyncSSDHDataPayload> ID = new CustomPayload.Id<>(Identifier.of(Main.MODID, "sync_serverside_data"));
     public static final PacketCodec<PacketByteBuf, SyncSSDHDataPayload> CODEC = PacketCodec.tuple(
             PacketCodecs.GAME_PROFILE, SyncSSDHDataPayload::profile,
-            PacketCodecs.BOOL, SyncSSDHDataPayload::isOmnipotent,
+            PacketCodecs.BOOLEAN, SyncSSDHDataPayload::isOmnipotent,
             PacketCodecs.INTEGER, SyncSSDHDataPayload::entitiesEnlightened,
             SyncSSDHDataPayload::new
     );
