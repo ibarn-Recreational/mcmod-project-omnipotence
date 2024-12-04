@@ -18,7 +18,7 @@ public interface LivingEntityInvoker {
         throw new IllegalStateException();
     }
 
-    @Invoker("dropXp")
+    @Invoker("dropExperience")
     void dropMobExperience(ServerWorld world, @Nullable Entity attacker);
 
     @Invoker("dropLoot")

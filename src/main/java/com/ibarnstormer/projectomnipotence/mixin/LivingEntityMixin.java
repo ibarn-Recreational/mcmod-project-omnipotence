@@ -69,7 +69,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
                     if (thisEntity.getWorld() instanceof ServerWorld serverWorld) {
                         if(serverWorld.getEnderDragonFight() != null) playerAttacker.addExperience(serverWorld.getEnderDragonFight().toData().previouslyKilled() ? 1000 : 24000);
                         for(ServerPlayerEntity serverPlayer : serverWorld.getPlayers()) {
-                            serverWorld.spawnParticles(serverPlayer, ParticleTypes.END_ROD, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getLengthY() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
+                            serverWorld.spawnParticles(serverPlayer, ParticleTypes.END_ROD, false, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getLengthY() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
                         }
                     }
                 }

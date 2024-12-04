@@ -242,7 +242,7 @@ public class POUtils {
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
             ((LivingEntityInvoker) livingEntity).dropEntityEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
-            if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getXpToDrop(serverWorld, playerAttacker));
+            if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
 
             livingEntity.setAttacking(null);
             if(livingEntity instanceof MobEntity mob) {
@@ -320,7 +320,7 @@ public class POUtils {
 
         for(ServerPlayerEntity player : server.getPlayers()) {
             if(entity.getUuid() != player.getUuid() || Main.CONFIG.omnipotentPlayerParticlesLocal)
-                server.spawnParticles(player, ParticleTypes.END_ROD, false, entity.getX(), entity.getY() + entity.getBoundingBox().getLengthY() / 2, entity.getZ(), 1, deltaX, deltaY, deltaZ, 0);
+                server.spawnParticles(player, ParticleTypes.END_ROD, false, false, entity.getX(), entity.getY() + entity.getBoundingBox().getLengthY() / 2, entity.getZ(), 1, deltaX, deltaY, deltaZ, 0);
         }
     }
 
@@ -337,7 +337,7 @@ public class POUtils {
         double j = random.nextGaussian() * deltaZ;
 
         if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
-            world.addParticle(ParticleTypes.END_ROD, false, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
+            world.addParticle(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
         }
     }
 
