@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
+import com.ibarnstormer.projectomnipotence.utils.POEntityConversionHelper;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
@@ -109,7 +110,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
     @Inject(method = "attack", at = @At("HEAD"))
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        if(POUtils.isOmnipotent(player)) {
+        if(POUtils.isOmnipotent(player) && player.getWorld() instanceof ServerWorld serverWorld) {
             float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
@@ -117,7 +118,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
             if(f > 0) {
                 list = player.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
                 for(LivingEntity entity : list) {
-                    if(entity != target && player.getWorld() instanceof ServerWorld serverWorld) entity.damage(serverWorld, entity.getDamageSources().playerAttack(player), 0.0F);
+                    if(entity != target) entity.damage(serverWorld, entity.getDamageSources().playerAttack(player), 0.0F);
                 }
 
                 player.spawnSweepAttackParticles();
@@ -136,8 +137,15 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                     if(conversionType != null) {
                         Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
-                            EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                            e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                            ((LivingEntityInvoker) mob).dropLootTableLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
+                            ((LivingEntityInvoker) mob).dropEntityEquipment(serverWorld, mob.getDamageSources().playerAttack(player), true);
+
+                            POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
+                            if(helper != null) e = helper.convertEntity(mob);
+                            else {
+                                EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
+                                e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                            }
                         }
                         else if(e != null) {
                             player.getWorld().spawnEntity(e);

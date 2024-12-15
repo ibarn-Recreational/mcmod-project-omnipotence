@@ -1,5 +1,6 @@
 package com.ibarnstormer.projectomnipotence.utils;
 
+import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.ServerTrackedData;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
@@ -14,7 +15,6 @@ import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
@@ -22,22 +22,23 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.conversion.EntityConversionContext;
 import net.minecraft.entity.conversion.EntityConversionType;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageType;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
+import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.GoatEntity;
+import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.BuiltinRegistries;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.InstrumentTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -50,9 +51,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.village.TradeOfferList;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 public class POUtils {
@@ -61,8 +64,9 @@ public class POUtils {
 
     // Create a tracked data instance for each respective class so that the ids of other data don't clash
     private static final HashMap<Class<? extends LivingEntity>, TrackedData<Boolean>> livingEntityDataSet = new HashMap<>();
+    private static final HashMap<EntityType<? extends MobEntity>, POEntityConversionHelper<? extends MobEntity, ? extends MobEntity>> finalizers;
 
-    private static final Set<UUID> trueEnlightened;
+    private static final ImmutableSet<UUID> trueEnlightened;
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -82,14 +86,77 @@ public class POUtils {
     public static final ProjectileDeflection OMNIPOTENT_PROJECTILE_DEFLECTOR;
 
     static {
-        trueEnlightened = new HashSet<>();
+        ImmutableSet.Builder<UUID> trueEnlightenedBuilder = new ImmutableSet.Builder<>();
 
-        trueEnlightened.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+        trueEnlightenedBuilder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+
+        trueEnlightened = trueEnlightenedBuilder.build();
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
             ProjectileDeflection.SIMPLE.deflect(projectile, hitEntity, random);
         };
+
+        finalizers = new HashMap<>();
+
+        // Zombie Villager to Villager
+        addConversionFinalizer(EntityType.ZOMBIE_VILLAGER, new POEntityConversionHelper<ZombieVillagerEntity, VillagerEntity>(EntityType.VILLAGER, (source) -> {
+            if(source.getType() == EntityType.ZOMBIE_VILLAGER) {
+
+                return (villager) -> {
+                    World world = villager.getWorld();
+
+                    if (world instanceof ServerWorld serverWorld) {
+                        try {
+                            Field gossipData = source.getClass().getDeclaredField("gossipData");
+                            Field offerData = source.getClass().getDeclaredField("offerData");
+                            Field experience = source.getClass().getDeclaredField("experience");
+
+                            gossipData.setAccessible(true);
+                            offerData.setAccessible(true);
+                            experience.setAccessible(true);
+
+                            villager.setVillagerData(source.getVillagerData());
+                            if (gossipData.get(source) != null) {
+                                villager.readGossipDataNbt((NbtElement) gossipData.get((ZombieVillagerEntity) source));
+                            }
+
+                            if (offerData.get(source) != null) {
+                                villager.setOffers(((TradeOfferList) offerData.get(source)).copy());
+                            }
+
+                            villager.setExperience(experience.getInt(source));
+                            villager.initialize(serverWorld, serverWorld.getLocalDifficulty(villager.getBlockPos()), SpawnReason.CONVERSION, null);
+                            villager.reinitializeBrain(serverWorld);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                };
+            }
+            else return (e) -> {};
+
+        }));
+
+        // Zombified Piglin -> Piglin
+        addConversionFinalizer(EntityType.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<ZombifiedPiglinEntity, PiglinEntity>(EntityType.PIGLIN, (source) -> {
+            if(source.getType() == EntityType.ZOMBIFIED_PIGLIN) {
+                return (piglin) -> {
+                    piglin.getHandItems().forEach(stack -> stack.setCount(0));
+                    piglin.getAllArmorItems().forEach(stack -> stack.setCount(0));
+                };
+            }
+            else return (e) -> {};
+        }));
+
+    }
+
+    // Addons can add finalizers here
+    public static void addConversionFinalizer(EntityType<? extends MobEntity> sourceType, POEntityConversionHelper helper) {
+        finalizers.put(sourceType, helper);
+    }
+
+    public static POEntityConversionHelper getConversionFinalizer(EntityType<? extends MobEntity> type) {
+        return finalizers.get(type);
     }
 
     public static void initPlayerData(ServersideDataTracker.Builder builder) {
@@ -263,9 +330,14 @@ public class POUtils {
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
                 EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
                 Entity e = conversionType.create(serverWorld, SpawnReason.CONVERSION);
+
                 if(livingEntity instanceof MobEntity mob && e instanceof MobEntity) {
-                    EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                    e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                    POEntityConversionHelper helper = finalizers.get(mob.getType());
+                    if(helper != null) e = helper.convertEntity(mob);
+                    else {
+                        EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
+                        e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                    }
                     if(e instanceof LivingEntity tle) setInHarmony(tle, true);
                 }
                 else if(e != null) {
