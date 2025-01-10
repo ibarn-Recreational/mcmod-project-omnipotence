@@ -4,6 +4,7 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ConsumableComponent;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -52,7 +53,10 @@ public class ItemMixin {
     @Inject(method = "inventoryTick", at = @At("HEAD"))
     public void item$inventoryTick_removeCurses(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo ci) {
         if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersRemoveCurses) {
-            EnchantmentHelper.apply(stack, c -> c.remove(e -> e.isIn(EnchantmentTags.CURSE)));
+            ItemEnchantmentsComponent enchantments = stack.getEnchantments();
+            if(enchantments.getEnchantments().stream().anyMatch(re -> re.isIn(EnchantmentTags.CURSE))) {
+                EnchantmentHelper.apply(stack, c -> c.remove(e -> e.isIn(EnchantmentTags.CURSE)));
+            }
         }
     }
 
