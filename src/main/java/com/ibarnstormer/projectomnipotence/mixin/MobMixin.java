@@ -3,6 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
+import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -37,8 +38,15 @@ public class MobMixin<T extends Mob> {
     @Inject(method = "convertTo", at = @At("RETURN"), cancellable = true)
     public void mod$convertTo(EntityType<T> p_21407_, boolean p_21408_, CallbackInfoReturnable<T> cir) {
         Mob thisMob = (Mob) (Object) this;
+
         if(thisMob instanceof HarmonicEntity harmonicEntity && harmonicEntity.getHarmonicState()) {
             T converionResult = cir.getReturnValue();
+            try {
+                if (POUtils.finalizers.containsKey(thisMob.getType())) {
+                    POUtils.finalizers.get(thisMob.getType()).accept(new Tuple<>(thisMob, converionResult));
+                }
+            }
+            catch(Exception ignored){}
             if(converionResult instanceof HarmonicEntity h) {
                 h.setHarmonicState(true);
                 cir.setReturnValue(converionResult);

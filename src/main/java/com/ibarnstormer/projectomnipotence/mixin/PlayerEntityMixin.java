@@ -206,7 +206,9 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.tryParse(Main.CONFIG.convertUponEnlightened.get(entityID)));
                     if(conversionType != null) {
                         Entity e = conversionType.create(player.level());
+
                         if(le instanceof Mob mob && e instanceof Mob) {
+                            POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
                             EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
                             e = mob.convertTo(tMobType, true);
                         }

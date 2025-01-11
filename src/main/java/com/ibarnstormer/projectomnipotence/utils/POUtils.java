@@ -6,13 +6,16 @@ import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
 import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
 import com.ibarnstormer.projectomnipotence.registry.ModAttachmentTypes;
+import com.mojang.datafixers.types.Func;
 import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
@@ -24,34 +27,45 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.InstrumentTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.village.ReputationEventType;
 import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.ZombieVillager;
+import net.minecraft.world.entity.monster.ZombifiedPiglin;
+import net.minecraft.world.entity.monster.piglin.Piglin;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import net.minecraft.world.item.*;
+import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class POUtils {
 
     private static final ImmutableSet<UUID> trueEnlightened;
+
+    public static final HashMap<EntityType<? extends Mob>, Consumer<Tuple<? extends Mob, ? extends Mob>>> finalizers;
+
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -81,6 +95,51 @@ public class POUtils {
             if(hitEntity != null && hitEntity.level() instanceof ServerLevel serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.CONDUIT_ACTIVATE, hitEntity.getSoundSource(), 1.0f, 2.0f);
             ProjectileDeflection.REVERSE.deflect(projectile, hitEntity, random);
         };
+
+        finalizers = new HashMap<>();
+
+        // Zombie Villager to Villager
+        finalizers.put(EntityType.ZOMBIE_VILLAGER, (tuple) -> {
+            if(tuple.getA() instanceof ZombieVillager zombie && tuple.getB() instanceof Villager villager) {
+                if (villager != null && zombie.level() instanceof ServerLevel serverLevel) {
+
+                    try {
+                        Field gossipData = zombie.getClass().getDeclaredField("gossips");
+                        Field offerData = zombie.getClass().getDeclaredField("tradeOffers");
+                        Field experience = zombie.getClass().getDeclaredField("villagerXp");
+
+                        gossipData.setAccessible(true);
+                        offerData.setAccessible(true);
+                        experience.setAccessible(true);
+
+                        villager.setVillagerData(zombie.getVillagerData());
+                        if (gossipData.get(zombie) != null) {
+                            villager.setGossips((Tag) gossipData.get(zombie));
+                        }
+
+                        if (offerData.get(zombie) != null) {
+                            villager.setOffers(((MerchantOffers) offerData.get(zombie)).copy());
+                        }
+
+                        villager.setVillagerXp((Integer) experience.get(zombie));
+                        villager.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(villager.blockPosition()), MobSpawnType.CONVERSION, (SpawnGroupData) null);
+                        villager.refreshBrain(serverLevel);
+
+                        EventHooks.onLivingConvert(zombie, villager);
+                    }
+                    catch(Exception ignored){}
+                }
+
+            }
+        });
+
+        // Zombified Piglin -> Piglin
+        finalizers.put(EntityType.ZOMBIFIED_PIGLIN, (tuple) -> {
+            if(tuple.getA() instanceof ZombifiedPiglin && tuple.getB() instanceof Piglin piglin) {
+                piglin.getHandSlots().forEach(stack -> stack.setCount(0));
+                piglin.getArmorAndBodyArmorSlots().forEach(stack -> stack.setCount(0));
+            }
+        });
 
     }
 
