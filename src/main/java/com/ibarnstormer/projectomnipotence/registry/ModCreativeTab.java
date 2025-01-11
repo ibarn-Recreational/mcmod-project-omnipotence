@@ -39,7 +39,7 @@ public class ModCreativeTab {
         TOME_OF_LIES = new ItemStack(Items.BOOK);
 
         CustomData tolNbt = TOME_OF_LIES.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-        tolNbt = tolNbt.update(nbt -> nbt.putBoolean("isPOTome", false));
+        tolNbt = tolNbt.update(nbt -> nbt.putBoolean("isPOTomeReverse", true));
         TOME_OF_LIES.set(DataComponents.CUSTOM_DATA, tolNbt);
         TOME_OF_LIES.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
         TOME_OF_LIES.set(DataComponents.RARITY, Rarity.EPIC);
