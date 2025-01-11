@@ -1,18 +1,20 @@
 package com.ibarnstormer.projectomnipotence.utils;
 
+import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
-import com.ibarnstormer.projectomnipotence.capability.OmnipotenceCapability;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
+import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
+import com.ibarnstormer.projectomnipotence.registry.ModAttachmentTypes;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -23,7 +25,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.InstrumentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -34,19 +36,22 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import net.minecraft.world.item.*;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RespawnAnchorBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
-public class Utils {
+public class POUtils {
 
-    private static final Set<UUID> trueEnlightened;
+    private static final ImmutableSet<UUID> trueEnlightened;
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -63,22 +68,79 @@ public class Utils {
             Items.MUSIC_DISC_WARD,
     };
 
-    static {
-        trueEnlightened = new HashSet<>();
+    public static final ProjectileDeflection OMNIPOTENT_PROJECTILE_DEFLECTOR;
 
-        trueEnlightened.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+    static {
+        ImmutableSet.Builder<UUID> trueEnlightenedBuilder = new ImmutableSet.Builder<>();
+
+        trueEnlightenedBuilder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+
+        trueEnlightened = trueEnlightenedBuilder.build();
+
+        OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
+            if(hitEntity != null && hitEntity.level() instanceof ServerLevel serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.CONDUIT_ACTIVATE, hitEntity.getSoundSource(), 1.0f, 2.0f);
+            ProjectileDeflection.REVERSE.deflect(projectile, hitEntity, random);
+        };
+
     }
 
-    public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_, @Nullable OmnipotenceCapability cap) {
+    public static boolean isOmnipotent(Player player) {
+        return player.getData(ModAttachmentTypes.IS_OMNIPOTENT);
+    }
+
+    public static void setOmnipotent(boolean val, Level level, Player player, boolean showVisuals) {
+        player.setData(ModAttachmentTypes.IS_OMNIPOTENT, val);
+        if (level instanceof ServerLevel server) {
+            if(isOmnipotent(player) && showVisuals) {
+                server.sendParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getYsize() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * player.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * player.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
+                player.displayClientMessage(Component.translatable("message.projectomnipotence.ascend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+            }
+            else if(!isOmnipotent(player)) {
+                if(showVisuals) player.displayClientMessage(Component.translatable("message.projectomnipotence.descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+                if(Main.CONFIG.omnipotentPlayersGlow && player.hasEffect(MobEffects.GLOWING)) player.removeEffect(MobEffects.GLOWING);
+                boolean inSurvival = !player.isSpectator() && !player.isCreative();
+                if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEnlightenedEntities(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {
+                    player.getAbilities().mayfly = false;
+                    player.getAbilities().flying = false;
+                    player.onUpdateAbilities();
+                }
+            }
+
+            // Update on client
+            if(player instanceof ServerPlayer serverPlayer) {
+                PacketDistributor.sendToPlayer(serverPlayer, new UpdateOmnipotentDataPayload(serverPlayer.getGameProfile(), isOmnipotent(serverPlayer), getEnlightenedEntities(serverPlayer)));
+            }
+        }
+    }
+
+    public static int getEnlightenedEntities(Player player) {
+        return player.getData(ModAttachmentTypes.ENTITIES_ENLIGHTENED);
+    }
+
+    public static void incrementEnlightened(int val, Player player) {
+        player.setData(ModAttachmentTypes.ENTITIES_ENLIGHTENED, getEnlightenedEntities(player) + val);
+    }
+
+    public static void setEnlightenedEntities(int val, Player player) {
+        player.setData(ModAttachmentTypes.ENTITIES_ENLIGHTENED, Math.max(val, 0));
+        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEnlightenedEntities(player) < Main.CONFIG.flightEntityGoal && inSurvival) {
+            player.getAbilities().mayfly = false;
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+        }
+    }
+
+    public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
-            ((LivingEntityInvoker) thisEntity).dropMobExperience();
+            ((LivingEntityInvoker) thisEntity).dropMobExperience(playerAttacker);
             ((LivingEntityInvoker) thisEntity).dropMobLoot(p_21016_, true);
-            if(playerAttacker != null) ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
+            if(playerAttacker != null && level instanceof ServerLevel serverLevel) ((LivingEntityInvoker) thisEntity).dropEntityEquipment(serverLevel, thisEntity.damageSources().playerAttack(playerAttacker), true);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
-            if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, playerAttacker == null ? 0 : EnchantmentHelper.getMobLooting(playerAttacker), true)) {
+            if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, true)) {
                 drops.forEach(e -> thisEntity.level().addFreshEntity(e));
             }
 
@@ -119,17 +181,19 @@ public class Utils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(cap != null) cap.incrementEnlightened(1);
+            if(playerAttacker != null) incrementEnlightened(1, playerAttacker);
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
         }
     }
 
-    public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, @Nullable OmnipotenceCapability cap) {
+    public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
-            ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
-            if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
+            if(playerAttacker != null && level instanceof ServerLevel serverLevel) {
+                ((LivingEntityInvoker) thisEntity).dropEntityEquipment(serverLevel, thisEntity.damageSources().playerAttack(playerAttacker), true);
+                playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward(serverLevel, playerAttacker));
+            }
 
             if (thisEntity instanceof Mob mob) {
                 mob.setCanPickUpLoot(false);
@@ -146,7 +210,7 @@ public class Utils {
             }
 
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
-                EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
+                EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.tryParse(Main.CONFIG.convertUponEnlightened.get(entityID)));
                 if(conversionType != null) {
                     Entity e = conversionType.create(playerAttacker.level());
                     if(thisEntity instanceof Mob mob && e instanceof Mob) {
@@ -164,7 +228,7 @@ public class Utils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(cap != null) cap.incrementEnlightened(1);
+            if(playerAttacker != null) incrementEnlightened(1, playerAttacker);
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
@@ -175,10 +239,8 @@ public class Utils {
         return trueEnlightened.contains(player.getUUID());
     }
 
-    public static double getLuckLevel(Player player) {
-        AtomicReference<Double> d = new AtomicReference<>(0.0D);
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> d.set(Math.min(Main.CONFIG.totalLuckLevels, Math.floor(cap.getEnlightenedEntities() / (double) Main.CONFIG.luckLevelEntityGoal))));
-        return d.get();
+    public static int getLuckLevel(Player player) {
+        return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEnlightenedEntities(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
     public static void respawnPlayer(ServerPlayer player) {
@@ -193,7 +255,7 @@ public class Utils {
                 if (world != null) {
                     if (pos == null) pos = world.getSharedSpawnPos();
 
-                    Optional<Vec3> finalPos = Player.findRespawnPositionAndUseSpawnBlock(world, pos, player.getRespawnAngle(), true, true);
+                    Optional<Vec3> finalPos = findRespawnPosition(world, pos, player.getRespawnAngle(), true, true);
                     BlockPos finalPos1 = pos;
 
                     player.fallDistance = 0.0F;
@@ -201,6 +263,31 @@ public class Utils {
                 }
             }
         }
+    }
+
+    private static Optional<Vec3> findRespawnPosition(ServerLevel world, BlockPos pos, float spawnAngle, boolean spawnForced, boolean alive) {
+        BlockState blockState = world.getBlockState(pos);
+        Block block = blockState.getBlock();
+        if (block instanceof RespawnAnchorBlock && (spawnForced || blockState.getValue(RespawnAnchorBlock.CHARGE) > 0) && RespawnAnchorBlock.canSetSpawn(world)) {
+            Optional<Vec3> optional = RespawnAnchorBlock.findStandUpPosition(EntityType.PLAYER, world, pos);
+            if (!spawnForced && !alive && optional.isPresent()) {
+                world.setBlock(pos, blockState.setValue(RespawnAnchorBlock.CHARGE, blockState.getValue(RespawnAnchorBlock.CHARGE) - 1), Block.UPDATE_ALL);
+            }
+            return optional;
+        }
+        if (block instanceof BedBlock && BedBlock.canSetSpawn(world)) {
+            return BedBlock.findStandUpPosition(EntityType.PLAYER, world, pos, blockState.getValue(BedBlock.FACING), spawnAngle);
+        }
+        if (!spawnForced) {
+            return Optional.empty();
+        }
+        boolean bl = block.isPossibleToRespawnInThis(blockState);
+        BlockState blockState2 = world.getBlockState(pos.above());
+        boolean bl2 = blockState2.getBlock().isPossibleToRespawnInThis(blockState2);
+        if (bl && bl2) {
+            return Optional.of(new Vec3((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5));
+        }
+        return Optional.empty();
     }
 
     public static void spawnEnlightenmentParticles(Entity entity, ServerLevel server) {

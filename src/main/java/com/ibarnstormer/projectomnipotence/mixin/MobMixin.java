@@ -1,8 +1,8 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -24,11 +24,14 @@ public class MobMixin<T extends Mob> {
     public void mob$setTarget(LivingEntity p_21544_, CallbackInfo ci) {
         if(p_21544_ == this.target) {
             if (p_21544_ instanceof Player player) {
-                player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                   if(cap.isOmnipotent()) this.target = null;
-                });
+                if(POUtils.isOmnipotent(player)) this.target = null;
             } else if (p_21544_ instanceof HarmonicEntity harmonicEntity && harmonicEntity.getHarmonicState()) this.target = null;
         }
+    }
+
+    @Inject(method = "canAttackType", at = @At("RETURN"), cancellable = true)
+    public void mob$canAttackType(EntityType<?> type, CallbackInfoReturnable<Boolean> cir) {
+        if(((Mob) (Object) this) instanceof HarmonicEntity harmonicEntity && harmonicEntity.getHarmonicState()) cir.setReturnValue(false);
     }
 
     @Inject(method = "convertTo", at = @At("RETURN"), cancellable = true)

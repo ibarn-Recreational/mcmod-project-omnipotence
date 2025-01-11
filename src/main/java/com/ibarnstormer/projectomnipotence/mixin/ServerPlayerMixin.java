@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.advancements.CriteriaTriggers;
@@ -29,20 +30,18 @@ public abstract class ServerPlayerMixin extends Player {
         cir.getReturnValue().ifLeft((reason) -> {
             if(reason == Player.BedSleepingProblem.NOT_SAFE) {
                 ServerPlayer player = (ServerPlayer) (Object) this;
-                player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                    if(cap.isOmnipotent()) {
-                        cir.setReturnValue(super.startSleepInBed(p_9115_).ifRight((unit) -> {
-                            player.awardStat(Stats.SLEEP_IN_BED);
-                            CriteriaTriggers.SLEPT_IN_BED.trigger(player);
-                        }));
+                if(POUtils.isOmnipotent(player)) {
+                    cir.setReturnValue(super.startSleepInBed(p_9115_).ifRight((unit) -> {
+                        player.awardStat(Stats.SLEEP_IN_BED);
+                        CriteriaTriggers.SLEPT_IN_BED.trigger(player);
+                    }));
 
-                        if (!player.serverLevel().canSleepThroughNights()) {
-                            player.displayClientMessage(Component.translatable("sleep.not_possible"), true);
-                        }
-
-                        if (player.level() instanceof ServerLevel server) server.updateSleepingPlayerList();
+                    if (!player.serverLevel().canSleepThroughNights()) {
+                        player.displayClientMessage(Component.translatable("sleep.not_possible"), true);
                     }
-                });
+
+                    if (player.level() instanceof ServerLevel server) server.updateSleepingPlayerList();
+                }
             }
         });
     }

@@ -2,10 +2,12 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
 
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.EntityType;
@@ -41,22 +43,28 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
         super(type, pos, state);
     }
 
-    @Inject(method = "load", at = @At("TAIL"))
-    private void beaconBlockEntity$load(CompoundTag nbt, CallbackInfo ci) {
-        this.isEnlightening = nbt.getBoolean("isEnlightening");
-        this.omnipotentOwner = nbt.getUUID("omnipotentOwnerUUID");
-        this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount");
+    @Inject(method = "loadAdditional", at = @At("TAIL"))
+    private void beaconBlockEntity$load(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+        try {
+            this.isEnlightening = tag.getBoolean("isEnlightening");
+            this.omnipotentOwner = tag.getUUID("omnipotentOwnerUUID");
+            this.cachedEnlightenedAmount = tag.getInt("cachedEnlightenedAmount");
+        }
+        catch(Exception ignored) {}
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
-    private void beaconBlockEntity$saveAdditional(CompoundTag nbt, CallbackInfo ci) {
-        nbt.putBoolean("isEnlightening", this.isEnlightening);
-        nbt.putUUID("omnipotentOwnerUUID", this.omnipotentOwner);
-        nbt.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
+    private void beaconBlockEntity$saveAdditional(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+        try {
+            tag.putBoolean("isEnlightening", this.isEnlightening);
+            tag.putUUID("omnipotentOwnerUUID", this.omnipotentOwner);
+            tag.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
+        }
+        catch(Exception ignored){}
     }
 
     @Inject(method = "applyEffects", at = @At(value = "HEAD"))
-    private static void beaconBlockEntity$applyEffects(Level level, BlockPos pos, int beaconLevel, MobEffect p_155101_, MobEffect p_155102_, CallbackInfo ci) {
+    private static void beaconBlockEntity$applyEffects(Level level, BlockPos pos, int beaconLevel, Holder<MobEffect> primaryEffect, Holder<MobEffect> secondaryEffect, CallbackInfo ci) {
         if(level.getBlockEntity(pos) instanceof BeaconBlockEntity beacon && ((EnlighteningBeacon) beacon).isEnlightening()) {
             double d = beaconLevel * 10 + 10;
             AABB aabb = (new AABB(pos)).inflate(d).expandTowards(0.0, level.getHeight(), 0.0);
@@ -65,11 +73,11 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
             List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getType() != EntityType.PLAYER && !((HarmonicEntity) e).getHarmonicState());
 
             for(LivingEntity entity : entities)
-                if(player != null) player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> Utils.harmonizeEntityByBeacon(entity, level, player, cap));
+                if(player != null) POUtils.harmonizeEntityByBeacon(entity, level, player);
 
             if(player == null) ((EnlighteningBeacon) beacon).setEnlightenedCache(((EnlighteningBeacon) beacon).getEnlightenedCache() + entities.size());
             else {
-                player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> cap.incrementEnlightened(((EnlighteningBeacon) beacon).getEnlightenedCache()));
+                POUtils.incrementEnlightened(((EnlighteningBeacon) beacon).getEnlightenedCache(), player);
                 ((EnlighteningBeacon) beacon).setEnlightenedCache(0);
             }
         }

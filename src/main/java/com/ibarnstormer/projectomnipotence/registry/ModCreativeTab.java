@@ -1,14 +1,15 @@
 package com.ibarnstormer.projectomnipotence.registry;
 
 import com.ibarnstormer.projectomnipotence.Main;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -26,22 +27,23 @@ public class ModCreativeTab {
     }
 
     static {
-        ListTag list = new ListTag();
-        list.add(new CompoundTag());
-
         TOME_OF_TRUTH = new ItemStack(Items.BOOK);
-        CompoundTag truthTomeNbt = new CompoundTag();
-        truthTomeNbt.put("Enchantments", list);
-        truthTomeNbt.putBoolean("isPOTome", true);
-        TOME_OF_TRUTH.setTag(truthTomeNbt);
-        TOME_OF_TRUTH.setHoverName(Component.translatable("item.projectomnipotence.tome_of_truth").setStyle(Style.EMPTY.withItalic(false)));
+
+        CustomData totNbt = TOME_OF_TRUTH.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        totNbt = totNbt.update(nbt -> nbt.putBoolean("isPOTome", true));
+        TOME_OF_TRUTH.set(DataComponents.CUSTOM_DATA, totNbt);
+        TOME_OF_TRUTH.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        TOME_OF_TRUTH.set(DataComponents.RARITY, Rarity.EPIC);
+        TOME_OF_TRUTH.set(DataComponents.CUSTOM_NAME, Component.translatable("item.projectomnipotence.tome_of_truth").setStyle(Style.EMPTY.withItalic(false)));
 
         TOME_OF_LIES = new ItemStack(Items.BOOK);
-        CompoundTag liesTomeNbt = new CompoundTag();
-        liesTomeNbt.put("Enchantments", list);
-        liesTomeNbt.putBoolean("isPOTomeReverse", true);
-        TOME_OF_LIES.setTag(liesTomeNbt);
-        TOME_OF_LIES.setHoverName(Component.translatable("item.projectomnipotence.tome_of_lies").setStyle(Style.EMPTY.withItalic(false)));
+
+        CustomData tolNbt = TOME_OF_LIES.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        tolNbt = tolNbt.update(nbt -> nbt.putBoolean("isPOTome", false));
+        TOME_OF_LIES.set(DataComponents.CUSTOM_DATA, tolNbt);
+        TOME_OF_LIES.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        TOME_OF_LIES.set(DataComponents.RARITY, Rarity.EPIC);
+        TOME_OF_LIES.set(DataComponents.CUSTOM_NAME, Component.translatable("item.projectomnipotence.tome_of_lies").setStyle(Style.EMPTY.withItalic(false)));
 
         MOD_TAB = MOD_TAB_REGISTRY.register("tab", () ->
             CreativeModeTab.builder()

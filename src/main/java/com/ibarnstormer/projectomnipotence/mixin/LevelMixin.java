@@ -2,7 +2,8 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Mixin(Level.class)
 public class LevelMixin {
 
-    @ModifyVariable(method = "explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;Z)Lnet/minecraft/world/level/Explosion;", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "explode(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Level$ExplosionInteraction;ZLnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/Holder;)Lnet/minecraft/world/level/Explosion;", at = @At("HEAD"), argsOnly = true)
     public Level.ExplosionInteraction level$explode(Level.ExplosionInteraction i, @Nullable Entity p_46526_, @Nullable DamageSource p_46527_, @Nullable ExplosionDamageCalculator p_46528_, double p_46529_, double p_46530_, double p_46531_, float p_46532_, boolean p_46533_, Level.ExplosionInteraction p_46534_, boolean p_46535_) {
         Level level = (Level) (Object) this;
         BlockPos pos = BlockPos.containing(p_46529_, p_46530_, p_46531_);
@@ -29,12 +30,10 @@ public class LevelMixin {
         AtomicReference<Level.ExplosionInteraction> interaction = new AtomicReference<>(i);
         AtomicReference<Boolean> foundOmnipotentPlayer = new AtomicReference<>(false);
         for(Player player : players) {
-            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersDampenExplosions) {
-                    interaction.set(Level.ExplosionInteraction.NONE);
-                    foundOmnipotentPlayer.set(true);
-                }
-            });
+            if(POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersDampenExplosions) {
+                interaction.set(Level.ExplosionInteraction.NONE);
+                foundOmnipotentPlayer.set(true);
+            }
             if(foundOmnipotentPlayer.get()) break;
         }
         return interaction.get();

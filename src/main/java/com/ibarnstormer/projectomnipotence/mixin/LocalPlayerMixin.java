@@ -1,8 +1,8 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -22,14 +22,9 @@ public abstract class LocalPlayerMixin extends AbstractClientPlayer {
     @Inject(method = "tick", at = @At("HEAD"))
     public void localPlayer$tick(CallbackInfo ci) {
         LocalPlayer player = (LocalPlayer) (Object) this;
-
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
-
-            if (player.tickCount % 5 == 0 && cap.isOmnipotent() && Main.CONFIG.omnipotentPlayerRenderParticlesClient && !Main.CONFIG.omnipotentPlayerParticlesLocal) {
-                Utils.spawnEnlightenmentParticlesClient(player, clientLevel);
-            }
-
-        });
+        if (player.tickCount % 5 == 0 && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayerRenderParticlesClient && !Main.CONFIG.omnipotentPlayerParticlesLocal) {
+            POUtils.spawnEnlightenmentParticlesClient(player, clientLevel);
+        }
 
     }
 

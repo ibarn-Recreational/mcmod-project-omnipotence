@@ -1,7 +1,8 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,9 +43,7 @@ public class PickupHandlerMixin {
     // Redirects don't work with external libraries so this is the only way
     @Inject(method = "tryPickupEntity", at = @At("HEAD"), remap = false, cancellable = true)
     private static void pickupHandler$tryPickupEntity(ServerPlayer player, Entity entity, Function<Entity, Boolean> pickupCallback, CallbackInfoReturnable<Boolean> cir) {
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
-            cir.setReturnValue(PickupHandlerMixin.tryPickupEntityPO(player, entity, pickupCallback, cap.isOmnipotent()));
-        });
+        cir.setReturnValue(PickupHandlerMixin.tryPickupEntityPO(player, entity, pickupCallback, POUtils.isOmnipotent(player)));
 
     }
 
@@ -129,7 +128,7 @@ public class PickupHandlerMixin {
                             Services.PLATFORM.sendPacketToPlayer(Constants.PACKET_ID_START_RIDING, new ClientboundStartRidingPacket(otherPlayer.getId(), true), player);
                             carry.setCarryingPlayer();
                             player.swing(InteractionHand.MAIN_HAND, true);
-                            player.level().playSound((Player)null, player.getOnPos(), SoundEvents.ARMOR_EQUIP_GENERIC, SoundSource.AMBIENT, 1.0F, 0.5F);
+                            player.level().playSound((Entity) null, player.getOnPos(), SoundEvents.ARMOR_EQUIP_GENERIC.value(), SoundSource.AMBIENT, 1.0F, 0.5F);
                             CarryOnDataManager.setCarryData(player, carry);
                             return true;
                         }
@@ -152,7 +151,7 @@ public class PickupHandlerMixin {
 
                         carry.setEntity(entity);
                         entity.remove(Entity.RemovalReason.UNLOADED_WITH_PLAYER);
-                        player.level().playSound(null, player.getOnPos(), SoundEvents.ARMOR_EQUIP_GENERIC, SoundSource.AMBIENT, 1.0F, 0.5F);
+                        player.level().playSound((Entity) null, player.getOnPos(), SoundEvents.ARMOR_EQUIP_GENERIC.value(), SoundSource.AMBIENT, 1.0F, 0.5F);
                         CarryOnDataManager.setCarryData(player, carry);
                         player.swing(InteractionHand.MAIN_HAND, true);
                         return true;

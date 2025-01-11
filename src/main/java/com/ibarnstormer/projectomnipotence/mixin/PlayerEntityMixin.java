@@ -2,11 +2,11 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -29,10 +29,9 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -41,10 +40,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Mixin(Player.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
+
+    @Unique
+    private static final ResourceLocation OMNIPOTENT_LUCK = ResourceLocation.fromNamespaceAndPath(Main.MODID, "omnipotent_luck");
 
     @Unique
     private int eeDelta;
@@ -56,175 +57,171 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Inject(method = "tick", at = @At("HEAD"))
     public void omniTick(CallbackInfo ci) {
         Player player = (Player) (Object) this;
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if((Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) || Main.CONFIG.permaOmnipotents.containsKey("*")) && !cap.isOmnipotent()) {
-                cap.setOmnipotent(true, level(), player, true);
-                Integer score = Main.CONFIG.permaOmnipotents.get(player.getScoreboardName());
-                cap.setEnlightenedEntities(Math.max((score == null ? Main.CONFIG.permaOmnipotents.get("*") : score.intValue()), cap.getEnlightenedEntities()));
+        if ((Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) || Main.CONFIG.permaOmnipotents.containsKey("*")) && !POUtils.isOmnipotent(player)) {
+            POUtils.setOmnipotent(true, level(), player, true);
+            Integer score = Main.CONFIG.permaOmnipotents.get(player.getScoreboardName());
+            POUtils.setEnlightenedEntities(Math.max((score == null ? Main.CONFIG.permaOmnipotents.get("*") : score.intValue()), POUtils.getEnlightenedEntities(player)), player);
+        }
+
+        if (POUtils.isTrueEnlightened(player) && !POUtils.isOmnipotent(player)) {
+            POUtils.setOmnipotent(true, level(), player, true);
+            POUtils.setEnlightenedEntities(Math.max((Math.min(10, Main.CONFIG.totalLuckLevels) * Main.CONFIG.luckLevelEntityGoal) + 1, POUtils.getEnlightenedEntities(player)), player);
+        }
+
+        AttributeInstance playerLuck = player.getAttribute(Attributes.LUCK);
+        assert playerLuck != null;
+
+        if (POUtils.isOmnipotent(player)) {
+            if (level() instanceof ServerLevel server && player.tickCount % 5 == 0 && !player.isSpectator() && Main.CONFIG.omnipotentPlayerParticles) {
+                POUtils.spawnEnlightenmentParticles(player, server);
             }
 
-            if(Utils.isTrueEnlightened(player) && !cap.isOmnipotent()) {
-                cap.setOmnipotent(true, level(), player, true);
-                cap.setEnlightenedEntities(Math.max((Math.min(10, Main.CONFIG.totalLuckLevels) * Main.CONFIG.luckLevelEntityGoal) + 1, cap.getEnlightenedEntities()));
+            if (Main.CONFIG.omnipotentPlayersGlow && !player.hasEffect(MobEffects.GLOWING)) {
+                player.addEffect(new MobEffectInstance(MobEffects.GLOWING, -1, 0, true, false, false));
             }
 
-            AttributeInstance playerLuck = player.getAttribute(Attributes.LUCK);
-            assert playerLuck != null;
-
-            if(cap.isOmnipotent()) {
-                if(level() instanceof ServerLevel server && player.tickCount % 5 == 0 && !player.isSpectator() && Main.CONFIG.omnipotentPlayerParticles) {
-                    Utils.spawnEnlightenmentParticles(player, server);
-                }
-
-                if(Main.CONFIG.omnipotentPlayersGlow && !player.hasEffect(MobEffects.GLOWING)) {
-                    player.addEffect(new MobEffectInstance(MobEffects.GLOWING, -1, 0, true, false, false));
-                }
-
-                Map<MobEffect, MobEffectInstance> localMEICollection = Maps.newHashMap();
-                for(MobEffectInstance effect : player.getActiveEffects()) {
-                    if(effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) localMEICollection.put(effect.getEffect(), effect);
-                }
-                for(MobEffectInstance effect : localMEICollection.values()) {
-                    player.removeEffect(effect.getEffect());
-                }
-
-                int score = cap.getEnlightenedEntities();
-
-                AttributeModifier luckModifier = playerLuck.getModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002"));
-                if (luckModifier == null && score >= Main.CONFIG.luckLevelEntityGoal) {
-                    playerLuck.addPermanentModifier(new AttributeModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002"), "Omnipotent Luck", Utils.getLuckLevel(player), AttributeModifier.Operation.ADDITION));
-                }
-                else if (luckModifier != null) {
-                    double currentLevel = Utils.getLuckLevel(player);
-                    if(luckModifier.getAmount() != currentLevel) {
-                        playerLuck.removeModifier(luckModifier.getId());
-                        playerLuck.addPermanentModifier(new AttributeModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002"), "Omnipotent Luck", currentLevel, AttributeModifier.Operation.ADDITION));
-                    }
-                }
-
-                /* eeDelta isn't persistent so set it to score upon class load
-                 * to prevent message spam each time we load a world
-                 */
-                if(score > 0 && eeDelta == 0) eeDelta = score;
-
-                if(score > this.eeDelta && Math.ceil((double) score / Main.CONFIG.luckLevelEntityGoal) > Math.ceil((double) this.eeDelta / Main.CONFIG.luckLevelEntityGoal) && score < (Main.CONFIG.totalLuckLevels + 1) * Main.CONFIG.luckLevelEntityGoal && score > Main.CONFIG.luckLevelEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.attunement").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
-                }
-                if(score > this.eeDelta && score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && eeDelta < Main.CONFIG.invulnerabilityEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.invulnerability").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
-                }
-                if(score > this.eeDelta && score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && eeDelta < Main.CONFIG.flightEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.flight").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
-                }
-
-                this.eeDelta = score;
-
-                if(score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
-                    if(player.getTicksFrozen() > 0) player.setTicksFrozen(0);
-                }
-
-                if(score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && !player.getAbilities().mayfly) {
-                    player.getAbilities().mayfly = true;
-                    player.onUpdateAbilities();
-                }
-
+            Map<MobEffect, MobEffectInstance> localMEICollection = Maps.newHashMap();
+            for (MobEffectInstance effect : player.getActiveEffects()) {
+                if (effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL)
+                    localMEICollection.put(effect.getEffect().value(), effect);
             }
-            else {
-                if(playerLuck.getModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002")) != null) {
-                    playerLuck.removePermanentModifier(UUID.fromString("784e3cf6-9e69-11ed-a8fc-0242ac120002"));
+            for (MobEffectInstance effect : localMEICollection.values()) {
+                player.removeEffect(effect.getEffect());
+            }
+
+            int score = POUtils.getEnlightenedEntities(player);
+
+            AttributeModifier luckModifier = playerLuck.getModifier(OMNIPOTENT_LUCK);
+            if (luckModifier == null && score >= Main.CONFIG.luckLevelEntityGoal) {
+                playerLuck.addPermanentModifier(new AttributeModifier(OMNIPOTENT_LUCK, POUtils.getLuckLevel(player), AttributeModifier.Operation.ADD_VALUE));
+            } else if (luckModifier != null) {
+                double currentLevel = POUtils.getLuckLevel(player);
+                if (luckModifier.amount() != currentLevel) {
+                    playerLuck.removeModifier(luckModifier);
+                    playerLuck.addPermanentModifier(new AttributeModifier(OMNIPOTENT_LUCK, currentLevel, AttributeModifier.Operation.ADD_VALUE));
                 }
             }
-        });
+
+            /* eeDelta isn't persistent so set it to score upon class load
+             * to prevent message spam each time we load a world
+             */
+            if (score > 0 && eeDelta == 0) eeDelta = score;
+
+            if (score > this.eeDelta && Math.ceil((double) score / Main.CONFIG.luckLevelEntityGoal) > Math.ceil((double) this.eeDelta / Main.CONFIG.luckLevelEntityGoal) && score < (Main.CONFIG.totalLuckLevels + 1) * Main.CONFIG.luckLevelEntityGoal && score > Main.CONFIG.luckLevelEntityGoal) {
+                if (!level().isClientSide)
+                    player.displayClientMessage(Component.translatable("message.projectomnipotence.attunement").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+            }
+            if (score > this.eeDelta && score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && eeDelta < Main.CONFIG.invulnerabilityEntityGoal) {
+                if (!level().isClientSide)
+                    player.displayClientMessage(Component.translatable("message.projectomnipotence.invulnerability").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+            }
+            if (score > this.eeDelta && score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && eeDelta < Main.CONFIG.flightEntityGoal) {
+                if (!level().isClientSide)
+                    player.displayClientMessage(Component.translatable("message.projectomnipotence.flight").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+            }
+
+            this.eeDelta = score;
+
+            if (score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+                if (player.getTicksFrozen() > 0) player.setTicksFrozen(0);
+            }
+
+            if (score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && !player.getAbilities().mayfly) {
+                player.getAbilities().mayfly = true;
+                player.onUpdateAbilities();
+            }
+
+            if(player instanceof ServerPlayer serverPlayer && serverPlayer.tickCount % 20 == 0) {
+                PacketDistributor.sendToPlayer(serverPlayer, new UpdateOmnipotentDataPayload(serverPlayer.getGameProfile(), POUtils.isOmnipotent(serverPlayer), POUtils.getEnlightenedEntities(serverPlayer)));
+            }
+
+        } else {
+            if (playerLuck.getModifier(OMNIPOTENT_LUCK) != null) {
+                playerLuck.removeModifier(OMNIPOTENT_LUCK);
+            }
+        }
     }
 
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     public void modulateDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         Player player = (Player) (Object) this;
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            Level world = player.level();
-            if (cap.isOmnipotent()) {
-                if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClientSide() && !player.getAbilities().mayfly && player.getY() <= world.getMinBuildHeight()) {
-                    MinecraftServer server = player.getServer();
-                    if(server != null) {
-                        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1);
-                        Utils.respawnPlayer((ServerPlayer) player);
-                        world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1);
-                        cir.setReturnValue(false);
-                    }
-                }
-
-                if(cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) cir.setReturnValue(false);
-                if (source.getEntity() != null) {
-                    AtomicBoolean attackerIsOmnipotent = new AtomicBoolean(false);
-                    source.getEntity().getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(c -> attackerIsOmnipotent.set(c.isOmnipotent()));
-                    if (Main.CONFIG.omnipotentPlayersReflectDamage && !attackerIsOmnipotent.get()) {
-                        if(Main.CONFIG.damageReflectionBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(source.getEntity().getType())).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
-                            source.getEntity().hurt(source.getEntity().damageSources().generic(), amount);
-                        }
-                        else source.getEntity().hurt(source, amount);
-                    }
+        Level world = player.level();
+        if (POUtils.isOmnipotent(player)) {
+            if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClientSide() && !player.getAbilities().mayfly && player.getY() <= world.getMinBuildHeight()) {
+                MinecraftServer server = player.getServer();
+                if(server != null) {
+                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1);
+                    POUtils.respawnPlayer((ServerPlayer) player);
+                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1);
+                    cir.setReturnValue(false);
                 }
             }
-        });
+
+            if(POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) cir.setReturnValue(false);
+            if (source.getEntity() != null) {
+                if (Main.CONFIG.omnipotentPlayersReflectDamage && source.getEntity() instanceof Player playerAttacker && !POUtils.isOmnipotent(playerAttacker)) {
+                    if(Main.CONFIG.damageReflectionBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(source.getEntity().getType())).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
+                        source.getEntity().hurt(source.getEntity().damageSources().generic(), amount);
+                    }
+                    else source.getEntity().hurt(source, amount);
+                }
+            }
+        }
     }
 
     @Inject(method = "hurt", at = @At("TAIL"))
     public void onDeath(DamageSource p_36154_, float p_36155_, CallbackInfoReturnable<Boolean> cir) {
         Player player = (Player) (Object) this;
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent() && player.isDeadOrDying() && Main.CONFIG.omnipotentPlayersReflectDamage) {
-                Entity attacker = p_36154_.getEntity();
-                if(attacker != null) attacker.kill();
-            }
-        });
+        if(POUtils.isOmnipotent(player) && player.isDeadOrDying() && Main.CONFIG.omnipotentPlayersReflectDamage) {
+            Entity attacker = p_36154_.getEntity();
+            if(attacker != null) attacker.kill();
+        }
     }
 
     @Inject(method = "attack", at = @At("HEAD"))
     public void onAttack(Entity p_36347_, CallbackInfo ci) {
         Player player = (Player) (Object) this;
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent() && !player.level().isClientSide) {
-                float f = EnchantmentHelper.getSweepingDamageRatio(player);
+        if(POUtils.isOmnipotent(player) && !player.level().isClientSide) {
+            float f = (float) player.getAttributeValue(Attributes.SWEEPING_DAMAGE_RATIO);
 
-                List<LivingEntity> list;
+            List<LivingEntity> list;
 
-                if(f > 0) {
-                    list = player.level().getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0D, 0.25D, 1.0D));
-                    for(LivingEntity entity : list) {
-                        if(entity != p_36347_ && entity != player && entity instanceof HarmonicEntity harmonicEntity && !harmonicEntity.getHarmonicState()) Utils.harmonizeEntity(entity, player.level(), player, entity.damageSources().playerAttack(player), cap);
-                    }
-                    player.sweepAttack();
+            if(f > 0) {
+                list = player.level().getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0D, 0.25D, 1.0D));
+                for(LivingEntity entity : list) {
+                    if(entity != p_36347_ && entity != player && entity instanceof HarmonicEntity harmonicEntity && !harmonicEntity.getHarmonicState()) POUtils.harmonizeEntity(entity, player.level(), player, entity.damageSources().playerAttack(player));
                 }
-                else if(p_36347_ instanceof LivingEntity le) list = List.of(le);
-                else list = new ArrayList<>();
+                player.sweepAttack();
+            }
+            else if(p_36347_ instanceof LivingEntity le) list = List.of(le);
+            else list = new ArrayList<>();
 
-                // If we want to simply remove stubborn entities
-                for(LivingEntity le : list) {
-                    String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(le.getType())).toString();
-                    if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
-                        Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
-                    }
-                    else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
-                        EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
-                        if(conversionType != null) {
-                            Entity e = conversionType.create(player.level());
-                            if(le instanceof Mob mob && e instanceof Mob) {
-                                EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
-                                e = mob.convertTo(tMobType, true);
-                            }
-                            else if(e != null) {
-                                player.level().addFreshEntity(e);
-                                Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
-                                le.setSilent(true);
-                                le.remove(RemovalReason.DISCARDED);
-                                le.level().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
-                            }
-
-                            if(e instanceof LivingEntity tle) Utils.harmonizeEntity(tle, player.level(), player, player.damageSources().playerAttack(player), cap);
+            // If we want to simply remove stubborn entities
+            for(LivingEntity le : list) {
+                String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(le.getType())).toString();
+                if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
+                    POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
+                }
+                else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
+                    EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.tryParse(Main.CONFIG.convertUponEnlightened.get(entityID)));
+                    if(conversionType != null) {
+                        Entity e = conversionType.create(player.level());
+                        if(le instanceof Mob mob && e instanceof Mob) {
+                            EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
+                            e = mob.convertTo(tMobType, true);
                         }
+                        else if(e != null) {
+                            player.level().addFreshEntity(e);
+                            POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
+                            le.setSilent(true);
+                            le.remove(RemovalReason.DISCARDED);
+                            le.level().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
+                        }
+
+                        if(e instanceof LivingEntity tle) POUtils.harmonizeEntity(tle, player.level(), player, player.damageSources().playerAttack(player));
                     }
                 }
             }
-        });
+        }
     }
 }

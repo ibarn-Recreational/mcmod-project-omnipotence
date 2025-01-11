@@ -1,7 +1,7 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
@@ -19,11 +19,9 @@ public class BlockItemMixin {
     public void blockItem$place(BlockPlaceContext p_40577_, CallbackInfoReturnable<InteractionResult> cir) {
         Player player = p_40577_.getPlayer();
         if(player != null) {
-            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if (cap.isOmnipotent() && p_40577_.getLevel().getBlockEntity(p_40577_.getClickedPos()) instanceof BeaconBlockEntity beacon){
-                    ((EnlighteningBeacon) beacon).setAsEnlightening(player);
-                }
-            });
+            if (POUtils.isOmnipotent(player) && p_40577_.getLevel().getBlockEntity(p_40577_.getClickedPos()) instanceof BeaconBlockEntity beacon){
+                ((EnlighteningBeacon) beacon).setAsEnlightening(player);
+            }
         }
     }
 

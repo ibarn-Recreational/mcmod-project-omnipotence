@@ -1,8 +1,7 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
-import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
@@ -17,14 +16,12 @@ public class VillagerEntityMixin {
 
     @Inject(method = "updateSpecialPrices", at = @At("HEAD"))
     public void decreasePrices(Player player, CallbackInfo ci) {
-        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent()) {
-                Villager villager = (Villager) (Object) this;
-                for(MerchantOffer offer : villager.getOffers()) {
-                    offer.addToSpecialPriceDiff(-Mth.floor(25 * Utils.getLuckLevel(player) + offer.getPriceMultiplier()));
-                }
+        if(POUtils.isOmnipotent(player)) {
+            Villager villager = (Villager) (Object) this;
+            for(MerchantOffer offer : villager.getOffers()) {
+                offer.addToSpecialPriceDiff(-Mth.floor(25 * POUtils.getLuckLevel(player) + offer.getPriceMultiplier()));
             }
-        });
+        }
     }
 
 }

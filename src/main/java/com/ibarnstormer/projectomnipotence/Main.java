@@ -1,14 +1,14 @@
 package com.ibarnstormer.projectomnipotence;
 
-import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.config.ModConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.event.ModEvents;
 import com.ibarnstormer.projectomnipotence.mixin.EntityAccessor;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
-import com.ibarnstormer.projectomnipotence.network.ModNetwork;
+import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
+import com.ibarnstormer.projectomnipotence.registry.ModAttachmentTypes;
 import com.ibarnstormer.projectomnipotence.registry.ModCreativeTab;
-import com.ibarnstormer.projectomnipotence.utils.Utils;
+import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -24,14 +24,14 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.slf4j.Logger;
-
-import java.util.Objects;
 
 @Mod(Main.MODID)
 public class Main
@@ -41,11 +41,14 @@ public class Main
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final int CONFIG_VERSION = 2;
 
-    public Main(IEventBus modEventBus)
+    public Main(IEventBus modEventBus, ModContainer modContainer)
     {
+        ModAttachmentTypes.init(modEventBus);
         ModCreativeTab.init(modEventBus);
 
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
+        modEventBus.addListener(this::setup);
+        modEventBus.addListener(this::registerNetworkPayloads);
+
         NeoForge.EVENT_BUS.register(this);
         NeoForge.EVENT_BUS.register(ModEvents.class);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
@@ -72,9 +75,14 @@ public class Main
         }
     }
 
-    @SubscribeEvent
     private void setup(final FMLCommonSetupEvent e) {
-        ModNetwork.initNetwork();
+
+    }
+
+    private void registerNetworkPayloads(final RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+
+        registrar.commonToClient(UpdateOmnipotentDataPayload.TYPE, UpdateOmnipotentDataPayload.STREAM_CODEC, UpdateOmnipotentDataPayload::handle);
     }
 
     @SubscribeEvent
@@ -106,25 +114,23 @@ public class Main
     }
 
     private int checkEntitiesEnlightened(CommandContext<CommandSourceStack> context) {
-        Objects.requireNonNull(context.getSource().getPlayer()).getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            context.getSource().sendSuccess(() -> Component.literal("§eYou've enlightened " + cap.getEnlightenedEntities() + " entities."), false);
-        });
+        if(context.getSource().getPlayer() != null) {
+            context.getSource().sendSuccess(() -> Component.literal("§eYou've enlightened " + POUtils.getEnlightenedEntities(context.getSource().getPlayer()) + " entities."), false);
+        }
         return 1;
     }
 
     private int clearEnlightened(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Entity target = EntityArgument.getEntity(context, "target");
         if(target instanceof Player player) {
-            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if(cap.isOmnipotent()) {
-                    if (!Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) && !Utils.isTrueEnlightened(player)) {
-                        cap.setOmnipotent(false, player.level(), player, true);
-                        context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
-                    }
-                    else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + "'s omnipotence cannot be removed"), false);
+            if(POUtils.isOmnipotent(player)) {
+                if (!Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) && !POUtils.isTrueEnlightened(player)) {
+                    POUtils.setOmnipotent(false, player.level(), player, true);
+                    context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                 }
-                else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already not an omnipotent."), false);
-            });
+                else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + "'s omnipotence cannot be removed"), false);
+            }
+            else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already not an omnipotent."), false);
         }
         else if(target instanceof HarmonicEntity harmonicEntity) {
             if(harmonicEntity.getHarmonicState()) {
@@ -138,42 +144,36 @@ public class Main
 
     private int outputEntitiesEnlightened(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Player target = EntityArgument.getPlayer(context, "target");
-        target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " enlightened " + cap.getEnlightenedEntities() + " entities."), false);
-        });
+        context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " enlightened " + POUtils.getEnlightenedEntities(target) + " entities."), false);
         return 1;
     }
 
     private int setEntitiesEnlightened(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Player target = EntityArgument.getPlayer(context, "target");
         int amount = IntegerArgumentType.getInteger(context, "amount");
-        target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            cap.setEnlightenedEntities(amount);
-            context.getSource().sendSuccess(() -> Component.literal("Set entities enlightened for " + target.getScoreboardName() + " to " + amount + "."), true);
-        });
+        POUtils.setEnlightenedEntities(amount, target);
+        context.getSource().sendSuccess(() -> Component.literal("Set entities enlightened for " + target.getScoreboardName() + " to " + amount + "."), true);
         return 1;
     }
 
     private int setEnlightened(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Entity target = EntityArgument.getEntity(context, "target");
         if(target instanceof Player player) {
-            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if(!cap.isOmnipotent()) {
-                    cap.setOmnipotent(true, player.level(), player, true);
-                    context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is now an omnipotent."), true);
-                }
-                else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already an omnipotent."), false);
-            });
+            if(!POUtils.isOmnipotent(player)) {
+                POUtils.setOmnipotent(true, player.level(), player, true);
+                context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is now an omnipotent."), true);
+            }
+            else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already an omnipotent."), false);
         }
         else if(target instanceof HarmonicEntity harmonicEntity) {
             if(target instanceof LivingEntity livingEntity) {
                 if (!harmonicEntity.getHarmonicState()) {
                     ServerPlayer player = context.getSource().getPlayer();
                     if(player != null) {
-                        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), player, target.damageSources().playerAttack(player), cap));
+                        POUtils.harmonizeEntity(livingEntity, context.getSource().getLevel(), player, target.damageSources().playerAttack(player));
                     }
                     else {
-                        Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), null, target.damageSources().generic(), null);
+                        POUtils.harmonizeEntity(livingEntity, context.getSource().getLevel(), null, target.damageSources().generic());
                     }
 
                     if(harmonicEntity.getHarmonicState()) context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " is now enlightened."), true);
@@ -188,15 +188,13 @@ public class Main
 
     private int removeBadActor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Player target = EntityArgument.getPlayer(context, "target");
-        target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent()) {
-                ((EntityAccessor) target).getEntityData().set(LivingEntityInvoker.getHealthID(), 0.0F);
-                context.getSource().sendSuccess(() -> Component.literal("Removed " + target.getScoreboardName() + "."), true);
-            }
-            else {
-                context.getSource().sendFailure(Component.literal("Player is not an omnipotent, use /kill."));
-            }
-        });
+        if(POUtils.isOmnipotent(target)) {
+            ((EntityAccessor) target).getEntityData().set(LivingEntityInvoker.getHealthID(), 0.0F);
+            context.getSource().sendSuccess(() -> Component.literal("Removed " + target.getScoreboardName() + "."), true);
+        }
+        else {
+            context.getSource().sendFailure(Component.literal("Player is not an omnipotent, use /kill."));
+        }
         return 1;
     }
 
