@@ -234,6 +234,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 this.eeDelta = score;
 
                 if(score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+                    ((EntityAccessor) player).getDataTracker().set(LivingEntityInvoker.getHealthID(), Math.max(player.getMaxHealth(), 20.0F));
                     if(player.getFrozenTicks() > 0) player.setFrozenTicks(0);
                 }
 

@@ -55,6 +55,22 @@ public abstract class EntityMixin implements ServerTrackedData {
         }
     }
 
+    @Inject(method = "setRemoved", at = @At("HEAD"), cancellable = true)
+    public void entity$setRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
+        Entity thisEntity = (Entity) (Object) this;
+        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
+    public void entity$remove(Entity.RemovalReason reason, CallbackInfo ci) {
+        Entity thisEntity = (Entity) (Object) this;
+        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
+            ci.cancel();
+        }
+    }
+
     @Override
     public void initServersideDataTracker(ServersideDataTracker.Builder builder) {}
 
