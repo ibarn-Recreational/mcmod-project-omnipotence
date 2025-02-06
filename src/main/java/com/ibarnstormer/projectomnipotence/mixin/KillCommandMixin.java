@@ -16,7 +16,7 @@ import java.util.Collection;
 @Mixin(KillCommand.class)
 public class KillCommandMixin {
 
-    // Against bad actors
+
     @Inject(method = "kill", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;kill()V"), cancellable = true)
     private static void killCommand$kill(CommandSourceStack p_137814_, Collection<? extends Entity> p_137815_, CallbackInfoReturnable<Integer> cir, @Local Entity entity) {
         if(entity instanceof Player player && POUtils.isOmnipotent(player) && player.isAlive()) {

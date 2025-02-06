@@ -93,7 +93,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     public void omniInvulnerability(float value, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity)(Object) this;
-        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && value < thisEntity.getMaxHealth()) {
+        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && value < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
             ci.cancel();
         }
     }

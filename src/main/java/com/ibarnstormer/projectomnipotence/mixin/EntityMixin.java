@@ -9,6 +9,7 @@ import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
@@ -44,6 +45,22 @@ public class EntityMixin {
         Entity thisEntity = (Entity) (Object) this;
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player)) {
             cir.setReturnValue(POUtils.OMNIPOTENT_PROJECTILE_DEFLECTOR);
+        }
+    }
+
+    @Inject(method = "setRemoved", at = @At("HEAD"), cancellable = true)
+    public void entity$setRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
+        Entity thisEntity = (Entity) (Object) this;
+        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
+    public void entity$remove(Entity.RemovalReason reason, CallbackInfo ci) {
+        Entity thisEntity = (Entity) (Object) this;
+        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
+            ci.cancel();
         }
     }
 
