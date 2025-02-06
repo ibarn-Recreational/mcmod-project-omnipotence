@@ -1,10 +1,12 @@
 package com.ibarnstormer.projectomnipotence.utils;
 
+import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.capability.OmnipotenceCapability;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
+import com.ibarnstormer.projectomnipotence.mixin.ServerPlayerMixin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -23,6 +25,8 @@ import net.minecraft.tags.InstrumentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,6 +39,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -45,7 +50,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Utils {
 
-    private static final Set<UUID> trueEnlightened;
+    private static final ImmutableSet<UUID> trueEnlightened;
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -63,9 +68,9 @@ public class Utils {
     };
 
     static {
-        trueEnlightened = new HashSet<>();
-
-        trueEnlightened.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+        ImmutableSet.Builder<UUID> builder = ImmutableSet.builder();
+        builder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+        trueEnlightened = builder.build();
     }
 
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_, @Nullable OmnipotenceCapability cap) {

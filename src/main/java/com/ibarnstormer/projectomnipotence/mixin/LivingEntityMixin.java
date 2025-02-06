@@ -98,7 +98,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     public void omniInvulnerability(float p_21154_, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity)(Object) this;
         thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
-            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && p_21154_ < thisEntity.getMaxHealth()) {
+            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && p_21154_ < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
                 ci.cancel();
             }
         });
@@ -138,6 +138,16 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     @Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
     public void preventMobDrops(DamageSource p_21192_, CallbackInfo ci) {
         if(getHarmonicState() && this.getType() != EntityType.PLAYER) ci.cancel();
+    }
+
+    @Inject(method = "isDeadOrDying", at = @At("RETURN"), cancellable = true)
+    public void livingEntity$isDeadOrDying(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
+            if(cap.isOmnipotent() && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal) {
+                cir.setReturnValue(false);
+            }
+        });
     }
 
     public void setHarmonicState(boolean val) {

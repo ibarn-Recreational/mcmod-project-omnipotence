@@ -19,7 +19,7 @@ import java.util.Iterator;
 @Mixin(KillCommand.class)
 public class KillCommandMixin {
 
-    // Against bad actors
+
     @Inject(method = "kill", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;kill()V"), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     private static void killCommand$kill(CommandSourceStack p_137814_, Collection<? extends Entity> p_137815_, CallbackInfoReturnable<Integer> cir, Iterator var2, Entity entity) {
         entity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {

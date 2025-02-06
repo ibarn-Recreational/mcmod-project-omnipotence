@@ -22,6 +22,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -37,8 +38,8 @@ public class Main
 {   
     public static final String MODID = "projectomnipotence";
     public static ModConfig CONFIG = ModConfig.initConfig();
-    private static final Logger LOGGER = LogUtils.getLogger();
-    public static final int CONFIG_VERSION = 2;
+    public static final Logger LOGGER = LogUtils.getLogger();
+    public static final int CONFIG_VERSION = 3;
 
     public Main()
     {
@@ -93,10 +94,6 @@ public class Main
                                 .then(Commands.argument("target", EntityArgument.player())
                                 .then(Commands.argument("amount", IntegerArgumentType.integer())
                                     .executes(this::setEntitiesEnlightened)))))
-                .then(LiteralArgumentBuilder.<CommandSourceStack>literal("removeBadActor")
-                        .requires(cx -> cx.hasPermission(2))
-                        .then(Commands.argument("target", EntityArgument.player())
-                                .executes(this::removeBadActor)))
                 .then(LiteralArgumentBuilder.<CommandSourceStack>literal("setEnlightened")
                         .requires(cx -> cx.hasPermission(2))
                         .then(Commands.argument("target", EntityArgument.entity())
@@ -181,20 +178,6 @@ public class Main
             }
             else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
         }
-        return 1;
-    }
-
-    private int removeBadActor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        Player target = EntityArgument.getPlayer(context, "target");
-        target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent()) {
-                ((EntityAccessor) target).getEntityData().set(LivingEntityInvoker.getHealthID(), 0.0F);
-                context.getSource().sendSuccess(() -> Component.literal("Removed " + target.getScoreboardName() + "."), true);
-            }
-            else {
-                context.getSource().sendFailure(Component.literal("Player is not an omnipotent, use /kill."));
-            }
-        });
         return 1;
     }
 

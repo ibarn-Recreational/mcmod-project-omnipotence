@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence.capability;
 
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.utils.Utils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;

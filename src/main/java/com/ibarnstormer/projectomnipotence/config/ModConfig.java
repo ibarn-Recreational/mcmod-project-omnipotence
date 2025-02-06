@@ -70,6 +70,7 @@ public class ModConfig {
         removeOnEnlightenList.add("aether:slider");
         removeOnEnlightenList.add("twilightforest:hydra");
         removeOnEnlightenList.add("twilightforest:naga");
+        removeOnEnlightenList.add("twilightforest:knight_phantom");
         removeOnEnlightenList.add("mowziesmobs:ferrous_wroughtnaut");
 
         // Prevent exploit
