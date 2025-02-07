@@ -13,7 +13,6 @@
     "BrainMixin",
     "BucketableMixin",
     "EnchantmentHelperMixin",
-    "EntityAccessor",
     "EntityMixin",
     "ItemMixin",
     "KillCommandMixin",

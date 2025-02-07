@@ -11,6 +11,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -157,7 +159,7 @@ public class POUtils {
             else if(!isOmnipotent(player)) {
                 if(showVisuals) player.displayClientMessage(Component.translatable("message.projectomnipotence.descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 if(Main.CONFIG.omnipotentPlayersGlow && player.hasEffect(MobEffects.GLOWING)) player.removeEffect(MobEffects.GLOWING);
-                boolean inSurvival = !player.isSpectator() && !player.isCreative();
+                boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
                 if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEnlightenedEntities(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {
                     player.getAbilities().mayfly = false;
                     player.getAbilities().flying = false;
@@ -182,7 +184,7 @@ public class POUtils {
 
     public static void setEnlightenedEntities(int val, Player player) {
         player.setData(ModAttachmentTypes.ENTITIES_ENLIGHTENED, Math.max(val, 0));
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEnlightenedEntities(player) < Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().mayfly = false;
             player.getAbilities().flying = false;
@@ -298,6 +300,17 @@ public class POUtils {
         return trueEnlightened.contains(player.getUUID());
     }
 
+    public static boolean enlightenedPlayerInCreative(Player player) {
+        if(!player.level().isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            return serverPlayer.gameMode.isCreative();
+        }
+        else if(player.level().isClientSide() && player instanceof AbstractClientPlayer clientPlayer) {
+            PlayerInfo playerInfo = clientPlayer.getPlayerInfo();
+            return playerInfo != null && playerInfo.getGameMode().isCreative();
+        }
+        else return false;
+    }
+
     public static int getLuckLevel(Player player) {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEnlightenedEntities(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
@@ -376,6 +389,8 @@ public class POUtils {
             world.addParticle(ParticleTypes.END_ROD, false, player.getX() + g, player.getY() + player.getBoundingBox().getYsize() / 2 + h, player.getZ() + j, 0, 0, 0);
         }
     }
+
+
 
 
 }

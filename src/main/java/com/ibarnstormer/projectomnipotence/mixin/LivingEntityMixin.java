@@ -66,7 +66,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
         LivingEntity thisEntity = (LivingEntity)(Object) this;
 
         if(p_21016_.getEntity() instanceof Player playerAttacker) {
-            if(POUtils.isOmnipotent(playerAttacker) && !playerAttacker.isCreative() && thisEntity.getType() != EntityType.PLAYER) {
+            if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
                 if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
                     if(playerAttacker instanceof ServerPlayer serverPlayer) CriteriaTriggers.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, p_21016_);
                     if (level() instanceof ServerLevel serverWorld) {
@@ -84,7 +84,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
                 }
                 cir.setReturnValue(false);
             }
-            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !playerAttacker.isCreative()) {
+            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !POUtils.enlightenedPlayerInCreative(playerAttacker)) {
                 cir.setReturnValue(false);
             }
         }
