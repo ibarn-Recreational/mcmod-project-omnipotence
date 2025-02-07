@@ -3,7 +3,6 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

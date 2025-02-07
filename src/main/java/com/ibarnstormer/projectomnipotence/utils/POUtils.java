@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.ServerTrackedData;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
-import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
-import com.ibarnstormer.projectomnipotence.mixin.MobEntityAccessor;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BedBlock;
@@ -13,7 +11,9 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
@@ -214,7 +214,7 @@ public class POUtils {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), false);
         if(!player.getWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
         if(Main.CONFIG.omnipotentPlayersGlow && player.hasStatusEffect(StatusEffects.GLOWING)) player.removeStatusEffect(StatusEffects.GLOWING);
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
@@ -249,7 +249,7 @@ public class POUtils {
 
     public static void setEntitiesEnlightened(PlayerEntity player, int value) {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), value);
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) < Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
@@ -260,9 +260,9 @@ public class POUtils {
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
             livingEntity.setAttacking(playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropMobExperience(serverWorld, playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropLootTableLoot(serverWorld, source, true);
-            ((LivingEntityInvoker) livingEntity).dropEntityEquipment(serverWorld, livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            livingEntity.dropExperience(serverWorld, playerAttacker);
+            livingEntity.dropLoot(serverWorld, source, true);
+            livingEntity.dropEquipment(serverWorld, livingEntity.getDamageSources().playerAttack(playerAttacker), true);
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -289,7 +289,7 @@ public class POUtils {
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                ((MobEntityAccessor) mob).getTargetSelector().clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
+                mob.targetSelector.clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
             }
 
             if(Main.CONFIG.removeOnEnlightenList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
@@ -308,14 +308,14 @@ public class POUtils {
     // Same as regular method but does not drop loot
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            ((LivingEntityInvoker) livingEntity).dropEntityEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            livingEntity.dropEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
             if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
 
             livingEntity.setAttacking(null);
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                ((MobEntityAccessor) mob).getTargetSelector().clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
+                mob.targetSelector.clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
             }
 
             String entityID = Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString();
@@ -411,6 +411,17 @@ public class POUtils {
         if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
             world.addParticle(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
         }
+    }
+
+    public static boolean enlightenedPlayerInCreative(PlayerEntity player) {
+        if(!player.getWorld().isClient() && player instanceof ServerPlayerEntity serverPlayer) {
+            return serverPlayer.interactionManager.isCreative();
+        }
+        else if(player.getWorld().isClient() && player instanceof AbstractClientPlayerEntity clientPlayer) {
+            PlayerListEntry playerListEntry = clientPlayer.getPlayerListEntry();
+            return playerListEntry != null && playerListEntry.getGameMode().isCreative();
+        }
+        else return false;
     }
 
     public static int getLuckLevel(PlayerEntity player) {
