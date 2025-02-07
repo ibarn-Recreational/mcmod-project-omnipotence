@@ -36,7 +36,7 @@ public class OmnipotenceCapability {
             else if(!this.isOmnipotent) {
                 if(showVisuals) player.displayClientMessage(Component.translatable("message.projectomnipotence.descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 if(Main.CONFIG.omnipotentPlayersGlow && player.hasEffect(MobEffects.GLOWING)) player.removeEffect(MobEffects.GLOWING);
-                boolean inSurvival = !player.isSpectator() && !player.isCreative();
+                boolean inSurvival = !player.isSpectator() && !Utils.enlightenedPlayerInCreative(player);
                 if(Main.CONFIG.omnipotentPlayersCanGainFlight && enlightenedEntities >= Main.CONFIG.flightEntityGoal && inSurvival) {
                     player.getAbilities().mayfly = false;
                     player.getAbilities().flying = false;
@@ -65,7 +65,7 @@ public class OmnipotenceCapability {
 
     public void setEnlightenedEntities(int val, Player player) {
         enlightenedEntities = Math.max(val, 0);
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !Utils.enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && enlightenedEntities < Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().mayfly = false;
             player.getAbilities().flying = false;

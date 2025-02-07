@@ -5,15 +5,13 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.capability.OmnipotenceCapability;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
-import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
-import com.ibarnstormer.projectomnipotence.mixin.ServerPlayerMixin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -24,9 +22,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.InstrumentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageType;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -39,7 +34,6 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -77,9 +71,9 @@ public class Utils {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
-            ((LivingEntityInvoker) thisEntity).dropMobExperience();
-            ((LivingEntityInvoker) thisEntity).dropMobLoot(p_21016_, true);
-            if(playerAttacker != null) ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
+            thisEntity.dropExperience();
+            thisEntity.dropFromLootTable(p_21016_, true);
+            if(playerAttacker != null) thisEntity.dropCustomDeathLoot(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
             if(!net.minecraftforge.common.ForgeHooks.onLivingDrops(thisEntity, p_21016_, drops, playerAttacker == null ? 0 : EnchantmentHelper.getMobLooting(playerAttacker), true)) {
@@ -132,7 +126,7 @@ public class Utils {
 
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, @Nullable OmnipotenceCapability cap) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
-            ((LivingEntityInvoker) thisEntity).dropEntityEquipment(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
+            thisEntity.dropCustomDeathLoot(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
             if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
 
             if (thisEntity instanceof Mob mob) {
@@ -233,6 +227,17 @@ public class Utils {
         if(Minecraft.getInstance().gameRenderer.getMainCamera().isDetached() || Minecraft.getInstance().cameraEntity != player) {
             world.addParticle(ParticleTypes.END_ROD, false, player.getX() + g, player.getY() + player.getBoundingBox().getYsize() / 2 + h, player.getZ() + j, 0, 0, 0);
         }
+    }
+
+    public static boolean enlightenedPlayerInCreative(Player player) {
+        if(!player.level().isClientSide() && player instanceof ServerPlayer serverPlayer) {
+            return serverPlayer.gameMode.isCreative();
+        }
+        else if(player.level().isClientSide() && player instanceof AbstractClientPlayer clientPlayer) {
+            PlayerInfo playerInfo = clientPlayer.getPlayerInfo();
+            return playerInfo != null && playerInfo.getGameMode().isCreative();
+        }
+        else return false;
     }
 
 

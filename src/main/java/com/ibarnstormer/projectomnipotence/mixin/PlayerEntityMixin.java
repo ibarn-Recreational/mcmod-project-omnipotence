@@ -120,7 +120,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 this.eeDelta = score;
 
                 if(score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
-                    ((EntityAccessor) player).getEntityData().set(LivingEntityInvoker.getHealthID(), Math.max(player.getMaxHealth(), 20.0F));
+                    player.entityData.set(LivingEntity.DATA_HEALTH_ID, Math.max(player.getMaxHealth(), 20.0F));
                     if(player.getTicksFrozen() > 0) player.setTicksFrozen(0);
                 }
 
@@ -205,7 +205,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
                         Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
                     }
-                    else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
+                    else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !Utils.enlightenedPlayerInCreative(player)) {
                         EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                         if(conversionType != null) {
                             Entity e = conversionType.create(player.level());
