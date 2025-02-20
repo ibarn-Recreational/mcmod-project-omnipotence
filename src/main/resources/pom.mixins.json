@@ -13,6 +13,7 @@
     "BlockItemMixin",
     "BrainMixin",
     "EnchantmentHelperMixin",
+    "EntityActuallyHurtMixin",
     "EntityMixin",
     "ItemMixin",
     "KillCommandMixin",

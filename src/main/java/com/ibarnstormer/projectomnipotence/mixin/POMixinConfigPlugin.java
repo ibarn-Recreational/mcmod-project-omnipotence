@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public class POMixinConfigPlugin implements IMixinConfigPlugin {
 
     private static final Map<String, Supplier<Boolean>> externMixins = ImmutableMap.of(
-            "com.ibarnstormer.projectomnipotence.mixin.PickupHandlerMixin", () -> LoadingModList.get().getModFileById("carryon") != null
+            "com.ibarnstormer.projectomnipotence.mixin.EntityActuallyHurtMixin", () -> LoadingModList.get().getModFileById("fantasy_ending") != null
     );
 
     @Override
