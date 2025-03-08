@@ -262,7 +262,7 @@ public class POUtils {
             livingEntity.setAttacking(playerAttacker);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
-            livingEntity.dropEquipment(serverWorld, livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            forceDropEquipment(livingEntity, serverWorld);
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -308,7 +308,7 @@ public class POUtils {
     // Same as regular method but does not drop loot
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            livingEntity.dropEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            forceDropEquipment(livingEntity, serverWorld);
             if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
 
             livingEntity.setAttacking(null);
@@ -426,6 +426,23 @@ public class POUtils {
 
     public static int getLuckLevel(PlayerEntity player) {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
+    }
+
+    public static void forceDropEquipment(LivingEntity entity, World world) {
+        if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
+            if(entity instanceof MobEntity mob) {
+                // Drop Hand items
+                for(ItemStack stack : mob.handItems) mob.dropStack(serverWorld, stack);
+                mob.handItems.clear();
+
+                // Drop Armor
+                for(ItemStack stack : mob.armorItems) mob.dropStack(serverWorld, stack);
+                mob.armorItems.clear();
+
+                // Drop body armor
+                mob.dropStack(serverWorld, mob.bodyArmor.copyAndEmpty());
+            }
+        }
     }
 
     public static void respawnPlayer(ServerPlayerEntity player) {
