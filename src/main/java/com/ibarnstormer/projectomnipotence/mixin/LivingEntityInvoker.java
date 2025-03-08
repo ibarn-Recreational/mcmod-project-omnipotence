@@ -18,7 +18,4 @@ public interface LivingEntityInvoker {
     @Invoker("dropFromLootTable")
     void dropMobLoot(DamageSource src, boolean b);
 
-    @Invoker("dropCustomDeathLoot")
-    void dropEntityEquipment(ServerLevel level, DamageSource damageSource, boolean recentlyHit);
-
 }

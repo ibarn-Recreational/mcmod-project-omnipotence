@@ -134,7 +134,22 @@ dependencies {
 
     // Compats
 
-    compileOnly "curse.maven:carry-on-274259:6033268"
+    compileOnly "curse.maven:carry-on-274259:5649344"
+
+    compileOnly "curse.maven:ars-nouveau-401955:6258331"
+    compileOnly "curse.maven:geckolib-388172:6027599"
+    compileOnly "curse.maven:curios-309927:6274154"
+    compileOnly "curse.maven:sophisticated-backpacks-422301:6246606"
+    compileOnly "curse.maven:sophisticated-core-618298:6266804"
+
+    runtimeOnly "curse.maven:carry-on-274259:5649344"
+
+    //runtimeOnly "curse.maven:ars-nouveau-401955:6258331"
+    //runtimeOnly "curse.maven:geckolib-388172:6027599"
+    //runtimeOnly "curse.maven:curios-309927:6274154"
+    //runtimeOnly "curse.maven:sophisticated-backpacks-422301:6246606"
+    //runtimeOnly "curse.maven:sophisticated-core-618298:6266804"
+
     //runtimeOnly "curse.maven:carry-on-274259:6033268"
 
     // Example mod dependency with JEI

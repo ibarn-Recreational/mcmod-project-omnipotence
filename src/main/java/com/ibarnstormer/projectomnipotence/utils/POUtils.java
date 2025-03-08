@@ -6,9 +6,7 @@ import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
 import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
 import com.ibarnstormer.projectomnipotence.registry.ModAttachmentTypes;
-import com.mojang.datafixers.types.Func;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -31,13 +29,11 @@ import net.minecraft.tags.InstrumentTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.ai.village.ReputationEventType;
 import net.minecraft.world.entity.animal.goat.Goat;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.ZombieVillager;
@@ -198,7 +194,7 @@ public class POUtils {
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience(playerAttacker);
             ((LivingEntityInvoker) thisEntity).dropMobLoot(p_21016_, true);
-            if(playerAttacker != null && level instanceof ServerLevel serverLevel) ((LivingEntityInvoker) thisEntity).dropEntityEquipment(serverLevel, thisEntity.damageSources().playerAttack(playerAttacker), true);
+            if(playerAttacker != null) forceDropEquipment(thisEntity, level);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
             if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, true)) {
@@ -252,7 +248,7 @@ public class POUtils {
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null && level instanceof ServerLevel serverLevel) {
-                ((LivingEntityInvoker) thisEntity).dropEntityEquipment(serverLevel, thisEntity.damageSources().playerAttack(playerAttacker), true);
+                forceDropEquipment(thisEntity, serverLevel);
                 playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward(serverLevel, playerAttacker));
             }
 
@@ -313,6 +309,23 @@ public class POUtils {
 
     public static int getLuckLevel(Player player) {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEnlightenedEntities(player) / (double) Main.CONFIG.luckLevelEntityGoal));
+    }
+
+    public static void forceDropEquipment(LivingEntity entity, Level level) {
+        if(!level.isClientSide() && entity.getType() != EntityType.PLAYER) {
+            if(entity instanceof Mob mob) {
+                // Drop Hand items
+                for(ItemStack stack : mob.handItems) mob.spawnAtLocation(stack);
+                mob.handItems.clear();
+
+                // Drop Armor
+                for(ItemStack stack : mob.armorItems) mob.spawnAtLocation(stack);
+                mob.armorItems.clear();
+
+                // Drop body armor
+                mob.spawnAtLocation(mob.bodyArmorItem.copyAndClear());
+            }
+        }
     }
 
     public static void respawnPlayer(ServerPlayer player) {

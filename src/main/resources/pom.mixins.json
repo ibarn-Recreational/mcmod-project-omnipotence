@@ -26,7 +26,8 @@
     "ServerPlayerGameModeMixin",
     "ServerPlayerMixin",
     "TrialSpawnerMixin",
-    "VillagerEntityMixin"
+    "VillagerEntityMixin",
+    "compat.ars_nouveau.EffectBreakMixin"
   ],
   "injectors": {
     "defaultRequire": 1
