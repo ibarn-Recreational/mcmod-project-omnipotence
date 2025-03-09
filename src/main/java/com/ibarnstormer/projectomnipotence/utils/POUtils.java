@@ -262,7 +262,7 @@ public class POUtils {
             livingEntity.setAttacking(playerAttacker);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
-            forceDropEquipment(livingEntity, serverWorld);
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker);
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -308,7 +308,7 @@ public class POUtils {
     // Same as regular method but does not drop loot
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            forceDropEquipment(livingEntity, serverWorld);
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker);
             if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
 
             livingEntity.setAttacking(null);
@@ -428,7 +428,7 @@ public class POUtils {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
-    public static void forceDropEquipment(LivingEntity entity, World world) {
+    public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player) {
         if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
                 // Drop Hand items
@@ -442,6 +442,7 @@ public class POUtils {
                 // Drop body armor
                 mob.dropStack(serverWorld, mob.bodyArmor.copyAndEmpty());
             }
+            entity.dropEquipment(serverWorld, player != null ? serverWorld.getDamageSources().playerAttack(player) : serverWorld.getDamageSources().generic(), true);
         }
     }
 

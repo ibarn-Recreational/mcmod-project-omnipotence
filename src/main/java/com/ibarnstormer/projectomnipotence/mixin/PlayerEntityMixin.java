@@ -138,7 +138,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                         Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
                             mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            POUtils.forceDropEquipment(mob, serverWorld);
+                            POUtils.forceDropEquipment(mob, serverWorld, player);
 
                             POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
                             if(helper != null) e = helper.convertEntity(mob);
