@@ -194,7 +194,7 @@ public class POUtils {
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience(playerAttacker);
             ((LivingEntityInvoker) thisEntity).dropMobLoot(p_21016_, true);
-            if(playerAttacker != null) forceDropEquipment(thisEntity, level);
+            forceDropEquipment(thisEntity, level, playerAttacker);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
             if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, true)) {
@@ -248,7 +248,7 @@ public class POUtils {
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null && level instanceof ServerLevel serverLevel) {
-                forceDropEquipment(thisEntity, serverLevel);
+                forceDropEquipment(thisEntity, serverLevel, playerAttacker);
                 playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward(serverLevel, playerAttacker));
             }
 
@@ -311,8 +311,8 @@ public class POUtils {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEnlightenedEntities(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
-    public static void forceDropEquipment(LivingEntity entity, Level level) {
-        if(!level.isClientSide() && entity.getType() != EntityType.PLAYER) {
+    public static void forceDropEquipment(LivingEntity entity, Level level, @Nullable Player player) {
+        if(level instanceof ServerLevel serverLevel && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof Mob mob) {
                 // Drop Hand items
                 for(ItemStack stack : mob.handItems) mob.spawnAtLocation(stack);
@@ -325,6 +325,7 @@ public class POUtils {
                 // Drop body armor
                 mob.spawnAtLocation(mob.bodyArmorItem.copyAndClear());
             }
+            ((LivingEntityInvoker) entity).dropCustomLoot(serverLevel, player != null ? serverLevel.damageSources().playerAttack(player) : serverLevel.damageSources().generic(), true);
         }
     }
 

@@ -14,7 +14,8 @@ import java.util.function.Supplier;
 public class POMixinConfigPlugin implements IMixinConfigPlugin {
 
     private static final Map<String, Supplier<Boolean>> externMixins = ImmutableMap.of(
-            "com.ibarnstormer.projectomnipotence.mixin.compat.ars_nouveau.EffectBreakMixin", () -> LoadingModList.get().getModFileById("ars_nouveau") != null
+            "com.ibarnstormer.projectomnipotence.mixin.compat.ars_nouveau.EffectBreakMixin", () -> LoadingModList.get().getModFileById("ars_nouveau") != null,
+            "com.ibarnstormer.projectomnipotence.mixin.compat.ars_nouveau.IDamageEffectMixin", () -> LoadingModList.get().getModFileById("ars_nouveau") != null
     );
 
     @Override

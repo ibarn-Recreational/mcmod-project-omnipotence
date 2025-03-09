@@ -27,7 +27,8 @@
     "ServerPlayerMixin",
     "TrialSpawnerMixin",
     "VillagerEntityMixin",
-    "compat.ars_nouveau.EffectBreakMixin"
+    "compat.ars_nouveau.EffectBreakMixin",
+    "compat.ars_nouveau.IDamageEffectMixin"
   ],
   "injectors": {
     "defaultRequire": 1
