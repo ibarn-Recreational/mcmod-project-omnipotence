@@ -33,6 +33,10 @@ import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -57,6 +61,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class POUtils {
 
@@ -262,7 +267,7 @@ public class POUtils {
             livingEntity.setAttacking(playerAttacker);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
-            forceDropEquipment(livingEntity, serverWorld, playerAttacker);
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker, livingEntity instanceof MobEntity mob ? (stack) -> mob.dropStack(serverWorld, stack) : (stack) -> {});
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -305,11 +310,24 @@ public class POUtils {
         }
     }
 
-    // Same as regular method but does not drop loot
-    public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
+
+    public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, BlockPos beaconPos) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            forceDropEquipment(livingEntity, serverWorld, playerAttacker);
-            if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker, (stack) -> {
+                ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, stack);
+                itemEntity.setToDefaultPickupDelay();
+                itemEntity.setVelocity(0 ,0 ,0);
+                serverWorld.spawnEntity(itemEntity);
+            });
+            if(playerAttacker != null) {
+                playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
+                processLootTableDrops(livingEntity, serverWorld, serverWorld.getDamageSources().playerAttack(playerAttacker), playerAttacker, (stack) -> {
+                    ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, stack);
+                    itemEntity.setToDefaultPickupDelay();
+                    itemEntity.setVelocity(0 ,0 ,0);
+                    serverWorld.spawnEntity(itemEntity);
+                });
+            }
 
             livingEntity.setAttacking(null);
             if(livingEntity instanceof MobEntity mob) {
@@ -381,6 +399,20 @@ public class POUtils {
         }
     }
 
+    private static void processLootTableDrops(LivingEntity target, ServerWorld world, DamageSource damageSource, @Nullable PlayerEntity playerAttacker, Consumer<ItemStack> callback) {
+        Optional<RegistryKey<LootTable>> optional = target.getLootTableKey();
+        if (optional.isPresent()) {
+            LootTable lootTable = world.getServer().getReloadableRegistries().getLootTable(optional.get());
+            LootWorldContext.Builder builder = (new LootWorldContext.Builder(world)).add(LootContextParameters.THIS_ENTITY, target).add(LootContextParameters.ORIGIN, target.getPos()).add(LootContextParameters.DAMAGE_SOURCE, damageSource).addOptional(LootContextParameters.ATTACKING_ENTITY, damageSource.getAttacker()).addOptional(LootContextParameters.DIRECT_ATTACKING_ENTITY, damageSource.getSource());
+            if (playerAttacker != null) {
+                builder = builder.add(LootContextParameters.LAST_DAMAGE_PLAYER, playerAttacker).luck(playerAttacker.getLuck());
+            }
+
+            LootWorldContext lootWorldContext = builder.build(LootContextTypes.ENTITY);
+            lootTable.generateLoot(lootWorldContext, target.getLootTableSeed(), callback);
+        }
+    }
+
     public static boolean isTrueEnlightened(PlayerEntity player) {
         return trueEnlightened.contains(player.getUuid());
     }
@@ -428,19 +460,19 @@ public class POUtils {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
-    public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player) {
+    public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player, Consumer<ItemStack> callback) {
         if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
                 // Drop Hand items
-                for(ItemStack stack : mob.handItems) mob.dropStack(serverWorld, stack);
+                for(ItemStack stack : mob.handItems) callback.accept(stack);
                 mob.handItems.clear();
 
                 // Drop Armor
-                for(ItemStack stack : mob.armorItems) mob.dropStack(serverWorld, stack);
+                for(ItemStack stack : mob.armorItems) callback.accept(stack);
                 mob.armorItems.clear();
 
                 // Drop body armor
-                mob.dropStack(serverWorld, mob.bodyArmor.copyAndEmpty());
+                callback.accept(mob.bodyArmor.copyAndEmpty());
             }
             entity.dropEquipment(serverWorld, player != null ? serverWorld.getDamageSources().playerAttack(player) : serverWorld.getDamageSources().generic(), true);
         }

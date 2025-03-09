@@ -138,7 +138,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                         Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
                             mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            POUtils.forceDropEquipment(mob, serverWorld, player);
+                            POUtils.forceDropEquipment(mob, serverWorld, player, (stack) -> mob.dropStack(serverWorld, stack));
 
                             POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
                             if(helper != null) e = helper.convertEntity(mob);
@@ -251,6 +251,14 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                     playerLuck.removeModifier(OMNIPOTENT_LUCK);
                 }
             }
+        }
+    }
+
+    @Inject(method = "onDeath", at = @At("HEAD"), cancellable = true)
+    public void playerEntity$onDeath(DamageSource cause, CallbackInfo ci) {
+        PlayerEntity player = ((PlayerEntity) (Object) this);
+        if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+            ci.cancel();
         }
     }
 }
