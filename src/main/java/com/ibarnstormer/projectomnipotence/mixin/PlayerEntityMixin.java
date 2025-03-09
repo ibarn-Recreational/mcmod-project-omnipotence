@@ -227,4 +227,12 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             }
         }
     }
+
+    @Inject(method = "die", at = @At("HEAD"), cancellable = true)
+    public void playerEntity$die(DamageSource cause, CallbackInfo ci) {
+        Player player = ((Player) (Object) this);
+        if(POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+            ci.cancel();
+        }
+    }
 }

@@ -49,6 +49,10 @@ import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -194,7 +198,7 @@ public class POUtils {
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience(playerAttacker);
             ((LivingEntityInvoker) thisEntity).dropMobLoot(p_21016_, true);
-            forceDropEquipment(thisEntity, level, playerAttacker);
+            forceDropEquipment(thisEntity, level, playerAttacker, thisEntity instanceof Mob mob ? (stack) -> mob.spawnAtLocation(stack) : (stack) -> {});
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
             if(!net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, p_21016_, drops, true)) {
@@ -245,11 +249,29 @@ public class POUtils {
         }
     }
 
-    public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker) {
+    public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, BlockPos beaconPos) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
             if(playerAttacker != null && level instanceof ServerLevel serverLevel) {
-                forceDropEquipment(thisEntity, serverLevel, playerAttacker);
+                thisEntity.setLastHurtByPlayer(playerAttacker);
+                thisEntity.captureDrops(new ArrayList<>());
+                processLootTableDrops(thisEntity, level.damageSources().playerAttack(playerAttacker), playerAttacker, (stack) -> {
+                    ItemEntity itementity = new ItemEntity(level, beaconPos.getX() + 0.5, beaconPos.above().getY(), beaconPos.getZ() + 0.5, stack);
+                    itementity.setDefaultPickUpDelay();
+                    itementity.setDeltaMovement(new Vec3(0, 0, 0));
+                    level.addFreshEntity(itementity);
+                });
+                forceDropEquipment(thisEntity, serverLevel, playerAttacker, (stack) -> {
+                    ItemEntity itementity = new ItemEntity(level, beaconPos.getX() + 0.5, beaconPos.above().getY(), beaconPos.getZ() + 0.5, stack);
+                    itementity.setDefaultPickUpDelay();
+                    itementity.setDeltaMovement(new Vec3(0, 0, 0));
+                    level.addFreshEntity(itementity);
+                });
                 playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward(serverLevel, playerAttacker));
+
+                Collection<ItemEntity> drops = thisEntity.captureDrops(null);
+                if(drops != null && !net.neoforged.neoforge.common.CommonHooks.onLivingDrops(thisEntity, level.damageSources().playerAttack(playerAttacker), drops, true)) {
+                    drops.forEach(e -> thisEntity.level().addFreshEntity(e));
+                }
             }
 
             if (thisEntity instanceof Mob mob) {
@@ -292,6 +314,18 @@ public class POUtils {
         }
     }
 
+    private static void processLootTableDrops(LivingEntity target, DamageSource damageSource, @Nullable Player playerAttacker, Consumer<ItemStack> callback) {
+        ResourceKey<LootTable> resourcekey = target.getLootTable();
+        LootTable loottable = target.level().getServer().reloadableRegistries().getLootTable(resourcekey);
+        LootParams.Builder lootparams$builder = (new LootParams.Builder((ServerLevel)target.level())).withParameter(LootContextParams.THIS_ENTITY, target).withParameter(LootContextParams.ORIGIN, target.position()).withParameter(LootContextParams.DAMAGE_SOURCE, damageSource).withOptionalParameter(LootContextParams.ATTACKING_ENTITY, damageSource.getEntity()).withOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY, damageSource.getDirectEntity());
+        if (playerAttacker != null) {
+            lootparams$builder = lootparams$builder.withParameter(LootContextParams.LAST_DAMAGE_PLAYER, playerAttacker).withLuck(playerAttacker.getLuck());
+        }
+
+        LootParams lootparams = lootparams$builder.create(LootContextParamSets.ENTITY);
+        loottable.getRandomItems(lootparams, target.getLootTableSeed(), callback);
+    }
+
     public static boolean isTrueEnlightened(Player player) {
         return trueEnlightened.contains(player.getUUID());
     }
@@ -311,19 +345,19 @@ public class POUtils {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEnlightenedEntities(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
-    public static void forceDropEquipment(LivingEntity entity, Level level, @Nullable Player player) {
+    public static void forceDropEquipment(LivingEntity entity, Level level, @Nullable Player player, Consumer<ItemStack> callback) {
         if(level instanceof ServerLevel serverLevel && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof Mob mob) {
                 // Drop Hand items
-                for(ItemStack stack : mob.handItems) mob.spawnAtLocation(stack);
+                for(ItemStack stack : mob.handItems) callback.accept(stack);
                 mob.handItems.clear();
 
                 // Drop Armor
-                for(ItemStack stack : mob.armorItems) mob.spawnAtLocation(stack);
+                for(ItemStack stack : mob.armorItems) callback.accept(stack);
                 mob.armorItems.clear();
 
                 // Drop body armor
-                mob.spawnAtLocation(mob.bodyArmorItem.copyAndClear());
+                callback.accept(mob.bodyArmorItem.copyAndClear());
             }
             ((LivingEntityInvoker) entity).dropCustomLoot(serverLevel, player != null ? serverLevel.damageSources().playerAttack(player) : serverLevel.damageSources().generic(), true);
         }
