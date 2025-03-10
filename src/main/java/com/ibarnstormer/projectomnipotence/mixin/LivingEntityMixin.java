@@ -4,10 +4,10 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.advancement.criterion.Criteria;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
@@ -63,7 +63,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
         LivingEntity thisEntity = (LivingEntity)(Object) this;
 
         if(source.getAttacker() instanceof PlayerEntity playerAttacker) {
-            if(POUtils.isOmnipotent(playerAttacker) && !playerAttacker.isCreative() && thisEntity.getType() != EntityType.PLAYER) {
+            if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
                 if (thisEntity.getType() == EntityType.ENDER_DRAGON) {
                     if(playerAttacker instanceof ServerPlayerEntity serverPlayer) Criteria.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, source);
                     if (thisEntity.getWorld() instanceof ServerWorld serverWorld) {
@@ -78,7 +78,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
                 }
                 cir.setReturnValue(false);
             }
-            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !playerAttacker.isCreative()) {
+            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !POUtils.enlightenedPlayerInCreative(playerAttacker)) {
                 cir.setReturnValue(false);
             }
         }
@@ -88,7 +88,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
     public void livingEntity$setHealth(float health, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
         if(thisEntity instanceof PlayerEntity player) {
-            if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < player.getMaxHealth()) {
+            if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
                 ci.cancel();
             }
         }
@@ -117,5 +117,13 @@ public abstract class LivingEntityMixin extends EntityMixin {
     public void livingEntity$drop(ServerWorld world, DamageSource damageSource, CallbackInfo ci) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) ci.cancel();
+    }
+
+    @Inject(method = "isDead", at = @At("RETURN"), cancellable = true)
+    public void livingEntity$isDead(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+            cir.setReturnValue(false);
+        }
     }
 }

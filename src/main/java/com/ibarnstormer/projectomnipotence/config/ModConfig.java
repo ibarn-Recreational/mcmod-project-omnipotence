@@ -49,6 +49,8 @@ public class ModConfig {
     public boolean omnipotentPlayersReflectDamage = true;
     public boolean omnipotentPlayersRemoveCurses = true;
 
+    public boolean carryOnCompat = true;
+
 
     private ModConfig() {
         permaOmnipotents.put("(Example Player Username Here)", 0);
@@ -63,6 +65,7 @@ public class ModConfig {
         removeOnEnlightenList.add("aether:slider");
         removeOnEnlightenList.add("twilightforest:hydra");
         removeOnEnlightenList.add("twilightforest:naga");
+        removeOnEnlightenList.add("twilightforest:knight_phantom");
         removeOnEnlightenList.add("mowziesmobs:ferrous_wroughtnaut");
 
         // Prevent exploit

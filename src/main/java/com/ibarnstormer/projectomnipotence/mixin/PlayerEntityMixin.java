@@ -132,13 +132,13 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 if(!POUtils.isInHarmony(le) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
                     POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
                 }
-                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !player.isCreative()) {
+                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !POUtils.enlightenedPlayerInCreative(player)) {
                     EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
                     if(conversionType != null) {
                         Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
-                            ((LivingEntityInvoker) mob).dropLootTableLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            ((LivingEntityInvoker) mob).dropEntityEquipment(serverWorld, mob.getDamageSources().playerAttack(player), true);
+                            mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
+                            POUtils.forceDropEquipment(mob, serverWorld, player, (stack) -> mob.dropStack(serverWorld, stack));
 
                             POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
                             if(helper != null) e = helper.convertEntity(mob);
@@ -234,6 +234,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                 this.eeDelta = score;
 
                 if(score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+                    player.dataTracker.set(LivingEntity.HEALTH, Math.max(player.getMaxHealth(), 20.0F));
                     if(player.getFrozenTicks() > 0) player.setFrozenTicks(0);
                 }
 
@@ -250,6 +251,14 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                     playerLuck.removeModifier(OMNIPOTENT_LUCK);
                 }
             }
+        }
+    }
+
+    @Inject(method = "onDeath", at = @At("HEAD"), cancellable = true)
+    public void playerEntity$onDeath(DamageSource cause, CallbackInfo ci) {
+        PlayerEntity player = ((PlayerEntity) (Object) this);
+        if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+            ci.cancel();
         }
     }
 }

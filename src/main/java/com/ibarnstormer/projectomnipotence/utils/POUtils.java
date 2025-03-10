@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.ServerTrackedData;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
-import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
-import com.ibarnstormer.projectomnipotence.mixin.MobEntityAccessor;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.BedBlock;
@@ -13,7 +11,9 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
@@ -33,6 +33,10 @@ import net.minecraft.entity.passive.GoatEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
+import net.minecraft.loot.LootTable;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
@@ -57,6 +61,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class POUtils {
 
@@ -214,7 +219,7 @@ public class POUtils {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), false);
         if(!player.getWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
         if(Main.CONFIG.omnipotentPlayersGlow && player.hasStatusEffect(StatusEffects.GLOWING)) player.removeStatusEffect(StatusEffects.GLOWING);
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
@@ -249,7 +254,7 @@ public class POUtils {
 
     public static void setEntitiesEnlightened(PlayerEntity player, int value) {
         ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), value);
-        boolean inSurvival = !player.isSpectator() && !player.isCreative();
+        boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) < Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
@@ -260,9 +265,9 @@ public class POUtils {
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
             livingEntity.setAttacking(playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropMobExperience(serverWorld, playerAttacker);
-            ((LivingEntityInvoker) livingEntity).dropLootTableLoot(serverWorld, source, true);
-            ((LivingEntityInvoker) livingEntity).dropEntityEquipment(serverWorld, livingEntity.getDamageSources().playerAttack(playerAttacker), true);
+            livingEntity.dropExperience(serverWorld, playerAttacker);
+            livingEntity.dropLoot(serverWorld, source, true);
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker, livingEntity instanceof MobEntity mob ? (stack) -> mob.dropStack(serverWorld, stack) : (stack) -> {});
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -289,7 +294,7 @@ public class POUtils {
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                ((MobEntityAccessor) mob).getTargetSelector().clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
+                mob.targetSelector.clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
             }
 
             if(Main.CONFIG.removeOnEnlightenList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
@@ -305,17 +310,30 @@ public class POUtils {
         }
     }
 
-    // Same as regular method but does not drop loot
-    public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker) {
+
+    public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, BlockPos beaconPos) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            ((LivingEntityInvoker) livingEntity).dropEntityEquipment((ServerWorld) livingEntity.getWorld(), livingEntity.getDamageSources().playerAttack(playerAttacker), true);
-            if(playerAttacker != null) playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
+            forceDropEquipment(livingEntity, serverWorld, playerAttacker, (stack) -> {
+                ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, stack);
+                itemEntity.setToDefaultPickupDelay();
+                itemEntity.setVelocity(0 ,0 ,0);
+                serverWorld.spawnEntity(itemEntity);
+            });
+            if(playerAttacker != null) {
+                playerAttacker.addExperience(livingEntity.getExperienceToDrop(serverWorld, playerAttacker));
+                processLootTableDrops(livingEntity, serverWorld, serverWorld.getDamageSources().playerAttack(playerAttacker), playerAttacker, (stack) -> {
+                    ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, stack);
+                    itemEntity.setToDefaultPickupDelay();
+                    itemEntity.setVelocity(0 ,0 ,0);
+                    serverWorld.spawnEntity(itemEntity);
+                });
+            }
 
             livingEntity.setAttacking(null);
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                ((MobEntityAccessor) mob).getTargetSelector().clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
+                mob.targetSelector.clear(goal -> goal instanceof ActiveTargetGoal<?> || goal instanceof RevengeGoal);
             }
 
             String entityID = Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString();
@@ -381,6 +399,20 @@ public class POUtils {
         }
     }
 
+    private static void processLootTableDrops(LivingEntity target, ServerWorld world, DamageSource damageSource, @Nullable PlayerEntity playerAttacker, Consumer<ItemStack> callback) {
+        Optional<RegistryKey<LootTable>> optional = target.getLootTableKey();
+        if (optional.isPresent()) {
+            LootTable lootTable = world.getServer().getReloadableRegistries().getLootTable(optional.get());
+            LootWorldContext.Builder builder = (new LootWorldContext.Builder(world)).add(LootContextParameters.THIS_ENTITY, target).add(LootContextParameters.ORIGIN, target.getPos()).add(LootContextParameters.DAMAGE_SOURCE, damageSource).addOptional(LootContextParameters.ATTACKING_ENTITY, damageSource.getAttacker()).addOptional(LootContextParameters.DIRECT_ATTACKING_ENTITY, damageSource.getSource());
+            if (playerAttacker != null) {
+                builder = builder.add(LootContextParameters.LAST_DAMAGE_PLAYER, playerAttacker).luck(playerAttacker.getLuck());
+            }
+
+            LootWorldContext lootWorldContext = builder.build(LootContextTypes.ENTITY);
+            lootTable.generateLoot(lootWorldContext, target.getLootTableSeed(), callback);
+        }
+    }
+
     public static boolean isTrueEnlightened(PlayerEntity player) {
         return trueEnlightened.contains(player.getUuid());
     }
@@ -413,8 +445,37 @@ public class POUtils {
         }
     }
 
+    public static boolean enlightenedPlayerInCreative(PlayerEntity player) {
+        if(!player.getWorld().isClient() && player instanceof ServerPlayerEntity serverPlayer) {
+            return serverPlayer.interactionManager.isCreative();
+        }
+        else if(player.getWorld().isClient() && player instanceof AbstractClientPlayerEntity clientPlayer) {
+            PlayerListEntry playerListEntry = clientPlayer.getPlayerListEntry();
+            return playerListEntry != null && playerListEntry.getGameMode().isCreative();
+        }
+        else return false;
+    }
+
     public static int getLuckLevel(PlayerEntity player) {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
+    }
+
+    public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player, Consumer<ItemStack> callback) {
+        if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
+            if(entity instanceof MobEntity mob) {
+                // Drop Hand items
+                for(ItemStack stack : mob.handItems) callback.accept(stack);
+                mob.handItems.clear();
+
+                // Drop Armor
+                for(ItemStack stack : mob.armorItems) callback.accept(stack);
+                mob.armorItems.clear();
+
+                // Drop body armor
+                callback.accept(mob.bodyArmor.copyAndEmpty());
+            }
+            entity.dropEquipment(serverWorld, player != null ? serverWorld.getDamageSources().playerAttack(player) : serverWorld.getDamageSources().generic(), true);
+        }
     }
 
     public static void respawnPlayer(ServerPlayerEntity player) {

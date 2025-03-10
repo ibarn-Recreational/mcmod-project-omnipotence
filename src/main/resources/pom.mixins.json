@@ -12,15 +12,12 @@
     "BucketableMixin",
     "CommandManagerMixin",
     "EnchantmentHelperMixin",
-    "EntityAccessor",
     "EntityBucketItemMixin",
     "EntityMixin",
     "FleeEntityGoalMixin",
     "ItemMixin",
     "KillCommandMixin",
-    "LivingEntityInvoker",
     "LivingEntityMixin",
-    "MobEntityAccessor",
     "MobEntityMixin",
     "PlayerEntityMixin",
     "ServerPlayerEntityMixin",
@@ -32,6 +29,7 @@
     "defaultRequire": 1
   },
   "client": [
+    "AbstractClientPlayerEntityMixin",
     "ClientPlayerEntityMixin",
     "InGameHudMixin"
   ]

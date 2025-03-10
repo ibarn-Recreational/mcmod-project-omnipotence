@@ -17,7 +17,7 @@ import java.util.Iterator;
 @Mixin(KillCommand.class)
 public class KillCommandMixin {
 
-    // Against bad actors
+
     @Inject(method = "execute", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;kill(Lnet/minecraft/server/world/ServerWorld;)V"), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     private static void killCommand$execute(ServerCommandSource source, Collection<? extends Entity> targets, CallbackInfoReturnable<Integer> cir, Iterator var2, Entity entity) {
         if(POUtils.isInHarmony(entity) && entity instanceof LivingEntity && entity.isAlive()) {

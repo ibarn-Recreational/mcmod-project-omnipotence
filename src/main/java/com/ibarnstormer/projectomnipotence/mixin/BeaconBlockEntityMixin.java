@@ -70,7 +70,7 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
             PlayerEntity player = ((EnlighteningBeacon) beacon).getOmnipotentOwner();
             List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e.getType() != EntityType.PLAYER && !POUtils.isInHarmony(e));
 
-            for(LivingEntity entity : entities) POUtils.harmonizeEntityByBeacon(entity, player);
+            for(LivingEntity entity : entities) POUtils.harmonizeEntityByBeacon(entity, player, pos);
 
             if(player == null) ((EnlighteningBeacon) beacon).setEnlightenedCache(((EnlighteningBeacon) beacon).getEnlightenedCache() + entities.size());
             else {
