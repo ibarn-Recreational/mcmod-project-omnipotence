@@ -22,7 +22,7 @@ public class EntityBucketItemMixin {
     @Inject(method = "spawnEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Bucketable;copyDataFromNbt(Lnet/minecraft/nbt/NbtCompound;)V", shift = At.Shift.BEFORE))
     private void entityBucketItem$spawnEntity(ServerWorld world, ItemStack stack, BlockPos pos, CallbackInfo ci, @Local Bucketable entity, @Local NbtComponent nbtComponent) {
         AtomicBoolean inHarmony = new AtomicBoolean(false);
-        nbtComponent.apply(nbt -> inHarmony.set(nbt.getBoolean("is_enlightened")));
+        nbtComponent.apply(nbt -> inHarmony.set(nbt.getBoolean("is_enlightened").orElse(false)));
         if(entity instanceof LivingEntity le) POUtils.setInHarmony(le, inHarmony.get());
     }
 

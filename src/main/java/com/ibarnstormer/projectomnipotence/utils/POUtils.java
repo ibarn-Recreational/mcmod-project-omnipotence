@@ -38,7 +38,6 @@ import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.loot.context.LootWorldContext;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
@@ -56,6 +55,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.village.TradeOfferList;
+import net.minecraft.village.VillagerGossips;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -113,7 +113,7 @@ public class POUtils {
 
                     if (world instanceof ServerWorld serverWorld) {
                         try {
-                            Field gossipData = source.getClass().getDeclaredField("gossipData");
+                            Field gossipData = source.getClass().getDeclaredField("gossip");
                             Field offerData = source.getClass().getDeclaredField("offerData");
                             Field experience = source.getClass().getDeclaredField("experience");
 
@@ -123,7 +123,7 @@ public class POUtils {
 
                             villager.setVillagerData(source.getVillagerData());
                             if (gossipData.get(source) != null) {
-                                villager.readGossipDataNbt((NbtElement) gossipData.get((ZombieVillagerEntity) source));
+                                villager.readGossipData((VillagerGossips) gossipData.get(source));
                             }
 
                             if (offerData.get(source) != null) {
@@ -146,8 +146,9 @@ public class POUtils {
         addConversionFinalizer(EntityType.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<ZombifiedPiglinEntity, PiglinEntity>(EntityType.PIGLIN, (source) -> {
             if(source.getType() == EntityType.ZOMBIFIED_PIGLIN) {
                 return (piglin) -> {
-                    piglin.getHandItems().forEach(stack -> stack.setCount(0));
-                    piglin.getAllArmorItems().forEach(stack -> stack.setCount(0));
+                    for (EquipmentSlot slot : EquipmentSlot.VALUES) {
+                        piglin.equipStack(slot, ItemStack.EMPTY);
+                    }
                 };
             }
             else return (e) -> {};
@@ -170,8 +171,8 @@ public class POUtils {
     }
 
     public static void readPlayerNbt(PlayerEntity player, NbtCompound nbt) {
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), nbt.getBoolean("isOmnipotent"));
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), nbt.getInt("EntitiesEnlightened"));
+        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), nbt.getBoolean("isOmnipotent").orElse(false));
+        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), nbt.getInt("EntitiesEnlightened").orElse(0));
     }
 
     public static void writePlayerNbt(PlayerEntity player, NbtCompound nbt) {
@@ -195,7 +196,7 @@ public class POUtils {
 
     public static void readNonPlayerData(LivingEntity entity, NbtCompound nbt) {
         TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-        ((ServerTrackedData) entity).getServersideDataTracker().set(inHarmony, nbt.getBoolean("inHarmony"));
+        ((ServerTrackedData) entity).getServersideDataTracker().set(inHarmony, nbt.getBoolean("inHarmony").orElse(false));
     }
 
     public static void writeNonPlayerData(LivingEntity entity, NbtCompound nbt) {
@@ -239,7 +240,7 @@ public class POUtils {
     public static boolean isOmnipotentClient(PlayerEntity player) {
         NbtCompound nbt = new NbtCompound();
         player.writeNbt(nbt);
-        return nbt.getBoolean("isOmnipotent");
+        return nbt.getBoolean("isOmnipotent").orElse(false);
     }
 
     public static int getEntitiesEnlightened(PlayerEntity player) {
@@ -249,7 +250,7 @@ public class POUtils {
     public static int getEntitiesEnlightenedClient(PlayerEntity player) {
         NbtCompound nbt = new NbtCompound();
         player.writeNbt(nbt);
-        return nbt.getInt("EntitiesEnlightened");
+        return nbt.getInt("EntitiesEnlightened").orElse(0);
     }
 
     public static void setEntitiesEnlightened(PlayerEntity player, int value) {
@@ -261,10 +262,10 @@ public class POUtils {
             player.sendAbilitiesUpdate();
         }
     }
-
+    // TODO: fix duplicated equipment drops
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            livingEntity.setAttacking(playerAttacker);
+            livingEntity.setAttacking(playerAttacker, 100);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
             forceDropEquipment(livingEntity, serverWorld, playerAttacker, livingEntity instanceof MobEntity mob ? (stack) -> mob.dropStack(serverWorld, stack) : (stack) -> {});
@@ -290,7 +291,7 @@ public class POUtils {
                 }
             }
 
-            livingEntity.setAttacking(null);
+            livingEntity.setAttacking((PlayerEntity) null, 0);
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
@@ -329,7 +330,7 @@ public class POUtils {
                 });
             }
 
-            livingEntity.setAttacking(null);
+            livingEntity.setAttacking((PlayerEntity) null, 0);
             if(livingEntity instanceof MobEntity mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
@@ -441,7 +442,7 @@ public class POUtils {
         double j = random.nextGaussian() * deltaZ;
 
         if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
-            world.addParticle(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
+            world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
         }
     }
 
@@ -463,16 +464,10 @@ public class POUtils {
     public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player, Consumer<ItemStack> callback) {
         if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
-                // Drop Hand items
-                for(ItemStack stack : mob.handItems) callback.accept(stack);
-                mob.handItems.clear();
-
-                // Drop Armor
-                for(ItemStack stack : mob.armorItems) callback.accept(stack);
-                mob.armorItems.clear();
-
-                // Drop body armor
-                callback.accept(mob.bodyArmor.copyAndEmpty());
+                for (EquipmentSlot slot : EquipmentSlot.VALUES) {
+                    ItemStack stack = mob.getEquippedStack(slot);
+                    callback.accept(stack);
+                }
             }
             entity.dropEquipment(serverWorld, player != null ? serverWorld.getDamageSources().playerAttack(player) : serverWorld.getDamageSources().generic(), true);
         }
@@ -481,8 +476,11 @@ public class POUtils {
     public static void respawnPlayer(ServerPlayerEntity player) {
         // Sanity check
         if (!player.getWorld().isClient()) {
-            BlockPos pos = player.getSpawnPointPosition();
-            RegistryKey<World> key = player.getSpawnPointDimension();
+            ServerPlayerEntity.Respawn respawn = player.getRespawn();
+
+
+            BlockPos pos = respawn != null ? respawn.pos() : player.getServerWorld().getSpawnPos();
+            RegistryKey<World> key = respawn != null ? respawn.dimension() : player.getServerWorld().getRegistryKey();
 
             MinecraftServer server = player.getServer();
             if (server != null) {
@@ -491,7 +489,7 @@ public class POUtils {
                 if (world != null) {
                     if (pos == null) pos = world.getSpawnPos();
 
-                    Optional<Vec3d> finalPos = findRespawnPosition(world, pos, player.getSpawnAngle(), true, true);
+                    Optional<Vec3d> finalPos = findRespawnPosition(world, pos, respawn != null ? respawn.angle() : 0.0F, true, true);
                     BlockPos finalPos1 = pos;
 
                     player.fallDistance = 0.0F;

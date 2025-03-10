@@ -8,9 +8,11 @@ import net.minecraft.component.type.ItemEnchantmentsComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.registry.tag.EnchantmentTags;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -32,11 +34,11 @@ public class ItemMixin {
         ConsumableComponent component = stack.get(DataComponentTypes.CONSUMABLE);
         if(stack.getItem() == Items.BOOK && component != null) {
             NbtComponent nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-            if (nbt.getNbt().getBoolean("isPOTome") && !POUtils.isOmnipotent(user)) {
+            if (nbt.getNbt().getBoolean("isPOTome").orElse(false) && !POUtils.isOmnipotent(user)) {
                 POUtils.grantOmnipotence(user, false);
                 stack.decrement(1);
                 cir.setReturnValue(component.consume(user, stack, hand));
-            } else if (!nbt.getNbt().getBoolean("isPOTome") && POUtils.isOmnipotent(user)) {
+            } else if (!nbt.getNbt().getBoolean("isPOTome").orElse(false) && POUtils.isOmnipotent(user)) {
                 if (Main.CONFIG.permaOmnipotents.containsKey(user.getNameForScoreboard()) || Main.CONFIG.permaOmnipotents.containsKey("*") || POUtils.isTrueEnlightened(user)) {
                     if (!world.isClient)
                         user.sendMessage(Text.translatable("message.projectomnipotence.failed_descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
@@ -51,7 +53,7 @@ public class ItemMixin {
     }
 
     @Inject(method = "inventoryTick", at = @At("HEAD"))
-    public void item$inventoryTick_removeCurses(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo ci) {
+    public void item$inventoryTick_removeCurses(ItemStack stack, ServerWorld world, Entity entity, EquipmentSlot slot, CallbackInfo ci) {
         if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersRemoveCurses) {
             ItemEnchantmentsComponent enchantments = stack.getEnchantments();
             if(enchantments.getEnchantments().stream().anyMatch(re -> re.isIn(EnchantmentTags.CURSE))) {
