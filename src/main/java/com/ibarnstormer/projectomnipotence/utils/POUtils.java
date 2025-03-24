@@ -262,13 +262,16 @@ public class POUtils {
             player.sendAbilitiesUpdate();
         }
     }
-    // TODO: fix duplicated equipment drops
+
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
             livingEntity.setAttacking(playerAttacker, 100);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
-            forceDropEquipment(livingEntity, serverWorld, playerAttacker, livingEntity instanceof MobEntity mob ? (stack) -> mob.dropStack(serverWorld, stack) : (stack) -> {});
+            forceDropEquipment(livingEntity, serverWorld, livingEntity instanceof MobEntity mob ? (stack) -> {
+                ItemStack copy = stack.copy();
+                mob.dropStack(serverWorld, copy);
+            } : (stack) -> {});
 
             if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
                 int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
@@ -314,8 +317,9 @@ public class POUtils {
 
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, BlockPos beaconPos) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
-            forceDropEquipment(livingEntity, serverWorld, playerAttacker, (stack) -> {
-                ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, stack);
+            forceDropEquipment(livingEntity, serverWorld, (stack) -> {
+                ItemStack copy = stack.copy();
+                ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, copy);
                 itemEntity.setToDefaultPickupDelay();
                 itemEntity.setVelocity(0 ,0 ,0);
                 serverWorld.spawnEntity(itemEntity);
@@ -461,15 +465,15 @@ public class POUtils {
         return (int) Math.min(Main.CONFIG.totalLuckLevels, Math.floor(getEntitiesEnlightened(player) / (double) Main.CONFIG.luckLevelEntityGoal));
     }
 
-    public static void forceDropEquipment(LivingEntity entity, World world, @Nullable PlayerEntity player, Consumer<ItemStack> callback) {
-        if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
+    public static void forceDropEquipment(LivingEntity entity, World world, Consumer<ItemStack> callback) {
+        if(world instanceof ServerWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
                 for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                     ItemStack stack = mob.getEquippedStack(slot);
                     callback.accept(stack);
+                    mob.getEquippedStack(slot).setCount(0);
                 }
             }
-            entity.dropEquipment(serverWorld, player != null ? serverWorld.getDamageSources().playerAttack(player) : serverWorld.getDamageSources().generic(), true);
         }
     }
 
