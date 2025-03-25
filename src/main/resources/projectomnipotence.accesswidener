@@ -9,6 +9,3 @@ accessible method net/minecraft/entity/LivingEntity dropEquipment (Lnet/minecraf
 accessible field net/minecraft/entity/mob/MobEntity targetSelector Lnet/minecraft/entity/ai/goal/GoalSelector;
 accessible method net/minecraft/entity/mob/MobEntity dropLoot (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
 accessible method net/minecraft/entity/mob/MobEntity dropEquipment (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
-accessible field net/minecraft/entity/mob/MobEntity handItems Lnet/minecraft/util/collection/DefaultedList;
-accessible field net/minecraft/entity/mob/MobEntity armorItems Lnet/minecraft/util/collection/DefaultedList;
-accessible field net/minecraft/entity/mob/MobEntity bodyArmor Lnet/minecraft/item/ItemStack;
