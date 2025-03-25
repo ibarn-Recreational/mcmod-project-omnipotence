@@ -23,6 +23,7 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
@@ -138,7 +139,10 @@ public abstract class PlayerEntityMixin extends EntityMixin {
                         Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
                         if(le instanceof MobEntity mob && e instanceof MobEntity) {
                             mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            POUtils.forceDropEquipment(mob, serverWorld, player, (stack) -> mob.dropStack(serverWorld, stack));
+                            POUtils.forceDropEquipment(mob, serverWorld, (stack) -> {
+                                ItemStack copy = stack.copy();
+                                mob.dropStack(serverWorld, copy);
+                            });
 
                             POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
                             if(helper != null) e = helper.convertEntity(mob);
@@ -259,6 +263,38 @@ public abstract class PlayerEntityMixin extends EntityMixin {
         PlayerEntity player = ((PlayerEntity) (Object) this);
         if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             ci.cancel();
+        }
+    }
+
+    @Inject(method = "isCreative", at = @At("RETURN"), cancellable = true)
+    public void playerEntity$isCreative(CallbackInfoReturnable<Boolean> cir) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        if(POUtils.isOmnipotent(player) && Main.CONFIG.carryOnCompat) {
+            // Carry-on compat
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (StackTraceElement e : stackTrace) {
+                if(e.getClassName().contains("tschipp.carryon.common.carry")) cir.setReturnValue(true);
+            }
+        }
+
+        if(POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && !cir.getReturnValue()) {
+
+            // Just assume that we are in creative if check gets called from FE (prevents UOM's final explosion from killing invulnerable omnipotents and timestop)
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (StackTraceElement e : stackTrace) {
+                if(e.getClassName().contains("com.mega.uom")) cir.setReturnValue(true);
+            }
+        }
+        if(POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersCanGainFlight && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.flightEntityGoal && !cir.getReturnValue()) {
+
+            // Prevent the Apostle from Goety from not allowing us to fly
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            for (StackTraceElement e : stackTrace) {
+                List<String> splitClass = List.of(e.getClassName().toLowerCase().split("\\."));
+                if(splitClass.contains("com") && splitClass.contains("polarice3") && splitClass.contains("goety") && splitClass.contains("boss")) {
+                    cir.setReturnValue(true);
+                }
+            }
         }
     }
 }

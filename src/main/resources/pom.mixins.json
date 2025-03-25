@@ -29,7 +29,6 @@
     "defaultRequire": 1
   },
   "client": [
-    "AbstractClientPlayerEntityMixin",
     "ClientPlayerEntityMixin",
     "InGameHudMixin"
   ]

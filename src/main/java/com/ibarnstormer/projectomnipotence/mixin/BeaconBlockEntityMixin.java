@@ -14,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
@@ -44,9 +45,9 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
     @Inject(method = "readNbt", at = @At("TAIL"))
     private void beaconBlockEntity$readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
         try {
-            this.isEnlightening = nbt.getBoolean("isEnlightening");
-            this.omnipotentOwner = nbt.getUuid("omnipotentOwnerUUID");
-            this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount");
+            this.isEnlightening = nbt.getBoolean("isEnlightening").orElse(false);
+            nbt.get("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC).ifPresent((uuid) -> this.omnipotentOwner = uuid);
+            this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount").orElse(0);
         }
         catch(Exception ignored){}
     }
@@ -55,7 +56,7 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
     private void beaconBlockEntity$writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
         try {
             nbt.putBoolean("isEnlightening", this.isEnlightening);
-            nbt.putUuid("omnipotentOwnerUUID", this.omnipotentOwner);
+            nbt.put("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC, this.omnipotentOwner);
             nbt.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
         }
         catch(Exception ignored){}
