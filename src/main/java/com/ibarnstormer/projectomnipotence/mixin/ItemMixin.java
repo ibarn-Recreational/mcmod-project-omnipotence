@@ -36,7 +36,7 @@ public class ItemMixin {
             NbtComponent nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
             if (nbt.getNbt().getBoolean("isPOTome").orElse(false) && !POUtils.isOmnipotent(user)) {
                 POUtils.grantOmnipotence(user, false);
-                stack.decrement(1);
+                if(!user.isCreative()) stack.decrement(1);
                 cir.setReturnValue(component.consume(user, stack, hand));
             } else if (!nbt.getNbt().getBoolean("isPOTome").orElse(false) && POUtils.isOmnipotent(user)) {
                 if (Main.CONFIG.permaOmnipotents.containsKey(user.getNameForScoreboard()) || Main.CONFIG.permaOmnipotents.containsKey("*") || POUtils.isTrueEnlightened(user)) {
@@ -45,7 +45,7 @@ public class ItemMixin {
                     cir.setReturnValue(ActionResult.FAIL);
                 } else {
                     POUtils.revokeOmnipotence(user);
-                    stack.decrement(1);
+                    if(!user.isCreative()) stack.decrement(1);
                     cir.setReturnValue(component.consume(user, stack, hand));
                 }
             }

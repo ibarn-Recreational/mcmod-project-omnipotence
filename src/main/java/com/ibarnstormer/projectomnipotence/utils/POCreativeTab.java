@@ -3,11 +3,15 @@ package com.ibarnstormer.projectomnipotence.utils;
 import com.ibarnstormer.projectomnipotence.Main;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ConsumableComponent;
 import net.minecraft.component.type.NbtComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.consume.ConsumeEffect;
+import net.minecraft.item.consume.UseAction;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -36,6 +40,7 @@ public class POCreativeTab {
         TOME_OF_TRUTH.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         TOME_OF_TRUTH.set(DataComponentTypes.RARITY, Rarity.EPIC);
         TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_truth").fillStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_TRUTH.set(DataComponentTypes.CONSUMABLE, ConsumableComponent.builder().consumeSeconds(0).consumeParticles(false).sound(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM).useAction(UseAction.NONE).build());
 
         TOME_OF_LIES = new ItemStack(Items.BOOK);
 
@@ -45,6 +50,7 @@ public class POCreativeTab {
         TOME_OF_LIES.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         TOME_OF_LIES.set(DataComponentTypes.RARITY, Rarity.EPIC);
         TOME_OF_LIES.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_lies").fillStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_LIES.set(DataComponentTypes.CONSUMABLE, ConsumableComponent.builder().consumeSeconds(0).consumeParticles(false).sound(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM).useAction(UseAction.NONE).build());
 
     }
 

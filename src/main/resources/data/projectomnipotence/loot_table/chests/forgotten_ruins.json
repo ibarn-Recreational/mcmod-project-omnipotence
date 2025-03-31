@@ -15,7 +15,13 @@
               "function": "minecraft:set_components",
               "components": {
                 "minecraft:rarity": "epic",
-                "minecraft:enchantment_glint_override": true
+                "minecraft:enchantment_glint_override": true,
+                "minecraft:consumable": {
+                  "consume_seconds": 0,
+                  "animation": "none",
+                  "sound": "minecraft:block.note_block.basedrum",
+                  "has_consume_particles": false
+                }
               }
             },
             {
