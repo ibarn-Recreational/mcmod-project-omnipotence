@@ -37,7 +37,7 @@ public class Main
     public static final String MODID = "projectomnipotence";
     public static ModConfig CONFIG = ModConfig.initConfig();
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final int CONFIG_VERSION = 3;
+    public static final int CONFIG_VERSION = 4;
 
     public Main(IEventBus modEventBus, ModContainer modContainer)
     {
