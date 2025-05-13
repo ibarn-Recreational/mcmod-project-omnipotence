@@ -43,7 +43,7 @@ public class ModConfig {
     public boolean omnipotentPlayerRenderParticlesClient = true;
 
     public boolean omnipotentPlayersCanBecomeInvulnerable = true;
-    public boolean omnipotentPlayersCanGainFlight = true;
+    public boolean omnipotentPlayersCanGainFlight = false;
     // public boolean omnipotentPlayersDampenExplosions = false;
     public boolean omnipotentPlayersDontGriefTrees = true;
     public boolean omnipotentPlayersReflectDamage = true;

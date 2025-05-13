@@ -13,7 +13,7 @@ public class Main implements ModInitializer {
 	public static final String MODID = "projectomnipotence";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 	public static ModConfig CONFIG = ModConfig.initConfig();
-	public static final int CONFIG_VERSION = 3;
+	public static final int CONFIG_VERSION = 4;
 
 
 	@Override

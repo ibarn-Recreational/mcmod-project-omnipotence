@@ -423,30 +423,15 @@ public class POUtils {
     }
 
     public static void spawnEnlightenmentParticles(Entity entity, ServerWorld server) {
-        double deltaX = Math.min(entity.getBoundingBox().getLengthX(), Math.max(-entity.getBoundingBox().getLengthX(), (Math.random() * entity.getBoundingBox().getLengthX() / 2) * 1.25));
-        double deltaY = Math.min(entity.getBoundingBox().getLengthY() / 3, Math.max(-entity.getBoundingBox().getLengthY() / 3, (Math.random() * entity.getBoundingBox().getLengthY() / 3) * 1.25));
-        double deltaZ = Math.min(entity.getBoundingBox().getLengthZ(), Math.max(-entity.getBoundingBox().getLengthZ(), (Math.random() * entity.getBoundingBox().getLengthZ() / 2) * 1.25));
-
         for(ServerPlayerEntity player : server.getPlayers()) {
             if(entity.getUuid() != player.getUuid() || Main.CONFIG.omnipotentPlayerParticlesLocal)
-                server.spawnParticles(player, ParticleTypes.END_ROD, false, false, entity.getX(), entity.getY() + entity.getBoundingBox().getLengthY() / 2, entity.getZ(), 1, deltaX, deltaY, deltaZ, 0);
+                server.spawnParticles(player, ParticleTypes.END_ROD, false, false, entity.getParticleX(0.5), entity.getRandomBodyY(), entity.getParticleZ(0.5), 1, 0, 0, 0, 0);
         }
     }
 
     public static void spawnEnlightenmentParticlesClient(ClientPlayerEntity player, ClientWorld world) {
-
-        double deltaX = Math.min(player.getBoundingBox().getLengthX(), Math.max(-player.getBoundingBox().getLengthX(), (Math.random() * player.getBoundingBox().getLengthX() / 2) * 1.25));
-        double deltaY = Math.min(player.getBoundingBox().getLengthY() / 3, Math.max(-player.getBoundingBox().getLengthY() / 3, (Math.random() * player.getBoundingBox().getLengthY() / 3) * 1.25));
-        double deltaZ = Math.min(player.getBoundingBox().getLengthZ(), Math.max(-player.getBoundingBox().getLengthZ(), (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 1.25));
-
-        Random random = world.random;
-
-        double g = random.nextGaussian() * deltaX;
-        double h = random.nextGaussian() * deltaY;
-        double j = random.nextGaussian() * deltaZ;
-
         if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
-            world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
+            world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getParticleX(0.5), player.getRandomBodyY(), player.getParticleZ(0.5), 0, 0, 0);
         }
     }
 
