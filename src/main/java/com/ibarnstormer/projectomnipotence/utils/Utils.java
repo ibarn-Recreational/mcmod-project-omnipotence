@@ -202,30 +202,15 @@ public class Utils {
     }
 
     public static void spawnEnlightenmentParticles(Entity entity, ServerLevel server) {
-        double deltaX = Math.min(entity.getBoundingBox().getXsize(), Math.max(-entity.getBoundingBox().getXsize(), (Math.random() * entity.getBoundingBox().getXsize() / 2) * 1.25));
-        double deltaY = Math.min(entity.getBoundingBox().getYsize() / 3, Math.max(-entity.getBoundingBox().getYsize() / 3, (Math.random() * entity.getBoundingBox().getYsize() / 3) * 1.25));
-        double deltaZ = Math.min(entity.getBoundingBox().getZsize(), Math.max(-entity.getBoundingBox().getZsize(), (Math.random() * entity.getBoundingBox().getZsize() / 2) * 1.25));
-
         for(ServerPlayer player : server.players()) {
             if(entity.getUUID() != player.getUUID() || Main.CONFIG.omnipotentPlayerParticlesLocal)
-                server.sendParticles(player, ParticleTypes.END_ROD, false, entity.getX(), entity.getY() + entity.getBoundingBox().getYsize() / 2, entity.getZ(), 1, deltaX, deltaY, deltaZ, 0);
+                server.sendParticles(player, ParticleTypes.END_ROD, false, entity.getRandomX(0.5), entity.getRandomY(), entity.getRandomZ(0.5), 1, 0, 0, 0, 0);
         }
     }
 
     public static void spawnEnlightenmentParticlesClient(LocalPlayer player, ClientLevel world) {
-
-        double deltaX = Math.min(player.getBoundingBox().getXsize(), Math.max(-player.getBoundingBox().getXsize(), (Math.random() * player.getBoundingBox().getXsize() / 2) * 1.25));
-        double deltaY = Math.min(player.getBoundingBox().getYsize() / 3, Math.max(-player.getBoundingBox().getYsize() / 3, (Math.random() * player.getBoundingBox().getYsize() / 3) * 1.25));
-        double deltaZ = Math.min(player.getBoundingBox().getZsize(), Math.max(-player.getBoundingBox().getZsize(), (Math.random() * player.getBoundingBox().getZsize() / 2) * 1.25));
-
-        RandomSource random = world.random;
-
-        double g = random.nextGaussian() * deltaX;
-        double h = random.nextGaussian() * deltaY;
-        double j = random.nextGaussian() * deltaZ;
-
         if(Minecraft.getInstance().gameRenderer.getMainCamera().isDetached() || Minecraft.getInstance().cameraEntity != player) {
-            world.addParticle(ParticleTypes.END_ROD, false, player.getX() + g, player.getY() + player.getBoundingBox().getYsize() / 2 + h, player.getZ() + j, 0, 0, 0);
+            world.addParticle(ParticleTypes.END_ROD, false, player.getRandomX(0.5), player.getRandomY(), player.getRandomZ(0.5), 0, 0, 0);
         }
     }
 
