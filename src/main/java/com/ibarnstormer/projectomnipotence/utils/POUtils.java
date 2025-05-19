@@ -48,7 +48,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -60,6 +62,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class POUtils {
@@ -375,7 +378,7 @@ public class POUtils {
                 if (world != null) {
                     if (pos == null) pos = world.getSharedSpawnPos();
 
-                    Optional<Vec3> finalPos = findRespawnPosition(world, pos, player.getRespawnAngle(), true, true);
+                    Optional<Vec3> finalPos = findRespawnPosition(world, player);
                     BlockPos finalPos1 = pos;
 
                     player.fallDistance = 0.0F;
@@ -385,29 +388,109 @@ public class POUtils {
         }
     }
 
-    private static Optional<Vec3> findRespawnPosition(ServerLevel world, BlockPos pos, float spawnAngle, boolean spawnForced, boolean alive) {
-        BlockState blockState = world.getBlockState(pos);
-        Block block = blockState.getBlock();
-        if (block instanceof RespawnAnchorBlock && (spawnForced || blockState.getValue(RespawnAnchorBlock.CHARGE) > 0) && RespawnAnchorBlock.canSetSpawn(world)) {
-            Optional<Vec3> optional = RespawnAnchorBlock.findStandUpPosition(EntityType.PLAYER, world, pos);
-            if (!spawnForced && !alive && optional.isPresent()) {
-                world.setBlock(pos, blockState.setValue(RespawnAnchorBlock.CHARGE, blockState.getValue(RespawnAnchorBlock.CHARGE) - 1), Block.UPDATE_ALL);
+    private static Optional<Vec3> findRespawnPosition(ServerLevel world, LivingEntity entity) {
+        Vec3 vec3d = new Vec3(entity.getX(), 0.0, entity.getZ());
+        Vec3 copy = vec3d;
+        Vec3 best = vec3d;
+
+        double minDistance = Double.MAX_VALUE;
+        double distance;
+
+        boolean foundCloseBy = false;
+
+        // Cardinals
+        for(int i = 0; i < 4; i++) {
+            for(int x = 16; x > 0; x--) {
+                if(isChunkEmpty(world, vec3d)) vec3d = vec3d.add(i == 0 ? 16.0D : i == 2 ? -16.0D : 0.0D, 0.0D, i == 1 ? 16.0D : i == 3 ? -16.0D : 0.0D);
+                else {
+                    foundCloseBy = true;
+                    distance = entity.distanceToSqr(vec3d);
+                    if(distance < minDistance) {
+                        minDistance = distance;
+                        best = vec3d;
+                    }
+                    break;
+                }
             }
-            return optional;
+            vec3d = copy;
         }
-        if (block instanceof BedBlock && BedBlock.canSetSpawn(world)) {
-            return BedBlock.findStandUpPosition(EntityType.PLAYER, world, pos, blockState.getValue(BedBlock.FACING), spawnAngle);
+
+        // Diagonals
+        for(int i = 1; i < 5; i++) {
+            for(int x = 16; x > 0; x--) {
+                if(isChunkEmpty(world, vec3d)) vec3d = vec3d.add(i <= 2 ? 16.0D : -16.0D, 0.0D, i % 2 == 1 ? 16.0D : -16.0D);
+                else {
+                    foundCloseBy = true;
+                    distance = entity.distanceToSqr(vec3d);
+                    if(distance < minDistance) {
+                        minDistance = distance;
+                        best = vec3d;
+                    }
+                    break;
+                }
+            }
+            vec3d = copy;
         }
-        if (!spawnForced) {
-            return Optional.empty();
+
+        if(!foundCloseBy) {
+            // Far Cardinals
+            for (int i = 0; i < 4; i++) {
+                for (int x = 16; x > 0; x--) {
+                    if (isChunkEmpty(world, vec3d))
+                        vec3d = vec3d.add(vec3d.multiply(i == 0 ? 16.0D : i == 2 ? -16.0D : 0.0D, 0.0D, i == 1 ? 16.0D : i == 3 ? -16.0D : 0.0D));
+                    else {
+                        distance = entity.distanceToSqr(vec3d);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            best = vec3d;
+                        }
+                        break;
+                    }
+                }
+                vec3d = copy;
+            }
+
+            // Far Diagonals
+            for (int i = 1; i < 5; i++) {
+                for (int x = 16; x > 0; x--) {
+                    if (isChunkEmpty(world, vec3d))
+                        vec3d = vec3d.add(vec3d.multiply(i <= 2 ? 16.0D : -16.0D, 0.0D, i % 2 == 1 ? 16.0D : -16.0D));
+                    else {
+                        distance = entity.distanceToSqr(vec3d);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            best = vec3d;
+                        }
+                        break;
+                    }
+                }
+                vec3d = copy;
+            }
         }
-        boolean bl = block.isPossibleToRespawnInThis(blockState);
-        BlockState blockState2 = world.getBlockState(pos.above());
-        boolean bl2 = blockState2.getBlock().isPossibleToRespawnInThis(blockState2);
-        if (bl && bl2) {
-            return Optional.of(new Vec3((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5));
+
+        AtomicReference<Boolean> foundSolid = new AtomicReference<>(false);
+        AtomicReference<Vec3> vec3d1 = new AtomicReference<>(null);
+
+        LevelChunk chunk = world.getChunk((int) Math.floor(best.x / 16.0), (int) Math.floor(best.z / 16.0));
+        chunk.findBlocks(BlockBehaviour.BlockStateBase::isSolid, (pos, state) -> {
+            if(!foundSolid.get()) {
+                vec3d1.set(pos.getBottomCenter());
+                foundSolid.set(true);
+            }
+        });
+
+        int i = 0;
+        while (!world.getBlockState(BlockPos.containing(vec3d1.get()).above()).isAir() || i > Short.MAX_VALUE) {
+            vec3d1.set(vec3d1.get().add(0, 1, 0));
+            i++;
         }
-        return Optional.empty();
+
+        vec3d = vec3d1.get().add(0.0, 1.0, 0.0);
+        return Optional.of(vec3d);
+    }
+
+    private static boolean isChunkEmpty(ServerLevel world, Vec3 pos) {
+        return world.getChunk((int) Math.floor(pos.x / 16.0), (int) Math.floor(pos.z / 16.0)).getHighestFilledSectionIndex() == -1;
     }
 
     public static void spawnEnlightenmentParticles(Entity entity, ServerLevel server) {

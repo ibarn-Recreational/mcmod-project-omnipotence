@@ -15,6 +15,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -132,6 +134,15 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     @Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
     public void preventMobDrops(ServerLevel p_level, DamageSource damageSource, CallbackInfo ci) {
         if(getHarmonicState() && this.getType() != EntityType.PLAYER) ci.cancel();
+    }
+
+    @Inject(method = "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$canHaveStatusEffect(MobEffectInstance effect, Entity entity, CallbackInfoReturnable<Boolean> cir) {
+        if(entity != null) {
+            if (entity instanceof Player player && POUtils.isOmnipotent(player) && effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
+                cir.setReturnValue(false);
+            }
+        }
     }
 
     public void setHarmonicState(boolean val) {
