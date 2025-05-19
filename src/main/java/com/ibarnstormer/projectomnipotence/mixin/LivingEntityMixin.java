@@ -8,6 +8,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffectCategory;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
@@ -123,6 +125,14 @@ public abstract class LivingEntityMixin extends EntityMixin {
     public void livingEntity$isDead(CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "canHaveStatusEffect", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$canHaveStatusEffect(StatusEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && effect.getEffectType().value().getCategory() == StatusEffectCategory.HARMFUL) {
             cir.setReturnValue(false);
         }
     }

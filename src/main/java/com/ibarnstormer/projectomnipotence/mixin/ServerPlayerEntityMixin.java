@@ -1,11 +1,8 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
-import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
