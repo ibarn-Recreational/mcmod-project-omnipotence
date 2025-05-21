@@ -2,7 +2,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.KillCommand;
 import net.minecraft.server.command.ServerCommandSource;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,7 +20,7 @@ public class KillCommandMixin {
 
     @Inject(method = "execute", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;kill(Lnet/minecraft/server/world/ServerWorld;)V"), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
     private static void killCommand$execute(ServerCommandSource source, Collection<? extends Entity> targets, CallbackInfoReturnable<Integer> cir, Iterator var2, Entity entity) {
-        if(POUtils.isInHarmony(entity) && entity instanceof LivingEntity && entity.isAlive()) {
+        if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && entity.isAlive()) {
             cir.cancel();
         }
     }

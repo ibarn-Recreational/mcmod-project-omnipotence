@@ -450,7 +450,7 @@ public class POUtils {
     }
 
     public static void forceDropEquipment(LivingEntity entity, World world, Consumer<ItemStack> callback) {
-        if(world instanceof ServerWorld && entity.getType() != EntityType.PLAYER) {
+        if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
                 for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                     ItemStack stack = mob.getEquippedStack(slot);
@@ -458,6 +458,8 @@ public class POUtils {
                     mob.getEquippedStack(slot).setCount(0);
                 }
             }
+            // For hardcoded loot tables
+            entity.dropEquipment(serverWorld, world.getDamageSources().generic(), true);
         }
     }
 
