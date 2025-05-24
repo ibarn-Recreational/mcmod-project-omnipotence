@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -113,7 +114,13 @@ public abstract class CommandManagerMixin {
         boolean isPlayer = target instanceof PlayerEntity;
         boolean failure = false;
 
-        if(target instanceof PlayerEntity playerTarget && (Main.CONFIG.permaOmnipotents.containsKey(playerTarget.getNameForScoreboard()) || POUtils.isTrueEnlightened(playerTarget))) {
+        boolean cannotLoseEnlightenment = false;
+        if(isPlayer) {
+            POPlayerConfig config = POUtils.getConfigForPlayer((PlayerEntity) target);
+            if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
+        }
+
+        if(cannotLoseEnlightenment) {
             context.getSource().sendFeedback(() -> Text.literal(target.getName().getString() + "'s omnipotence cannot be removed."), false);
             return 1;
         }

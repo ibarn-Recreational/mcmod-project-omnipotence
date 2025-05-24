@@ -1,18 +1,17 @@
 package com.ibarnstormer.projectomnipotence;
 
-import com.ibarnstormer.projectomnipotence.config.ModConfig;
+import com.ibarnstormer.projectomnipotence.config.POConfig;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POCreativeTab;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.impl.networking.PayloadTypeRegistryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Main implements ModInitializer {
 	public static final String MODID = "projectomnipotence";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MODID);
-	public static ModConfig CONFIG = ModConfig.initConfig();
+	public static POConfig CONFIG = POConfig.initConfig();
 	public static final int CONFIG_VERSION = 4;
 
 

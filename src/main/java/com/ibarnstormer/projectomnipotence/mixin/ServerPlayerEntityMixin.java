@@ -13,6 +13,7 @@ import net.minecraft.util.Unit;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -23,13 +24,18 @@ import java.util.List;
 @Mixin(ServerPlayerEntity.class)
 public abstract class ServerPlayerEntityMixin extends PlayerEntity {
 
+    @Unique
+    private ServerPlayerEntity getServerPlayer() {
+        return (ServerPlayerEntity) (Object) this;
+    }
+
     public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
     }
 
     @Inject(method = "copyFrom", at = @At("TAIL"))
     public void serverPlayerEntity$copyFrom(ServerPlayerEntity oldPlayer, boolean alive, CallbackInfo ci) {
-        ServerPlayerEntity newPlayer = (ServerPlayerEntity) (Object) this;
+        ServerPlayerEntity newPlayer = this.getServerPlayer();
         if(POUtils.isOmnipotent(oldPlayer)) POUtils.grantOmnipotence(newPlayer, true);
         POUtils.setEntitiesEnlightened(newPlayer, POUtils.getEntitiesEnlightened(oldPlayer));
     }
@@ -38,7 +44,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     public void serverPlayerEntity$trySleep(BlockPos pos, CallbackInfoReturnable<Either<PlayerEntity.SleepFailureReason, Unit>> cir) {
         cir.getReturnValue().ifLeft((reason) -> {
            if(reason == PlayerEntity.SleepFailureReason.NOT_SAFE) {
-                ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+                ServerPlayerEntity player = this.getServerPlayer();
                 if(POUtils.isOmnipotent(player)) {
                     cir.setReturnValue(super.trySleep(pos).ifRight((unit) -> {
                         player.incrementStat(Stats.SLEEP_IN_BED);

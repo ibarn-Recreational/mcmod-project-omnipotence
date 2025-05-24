@@ -27,10 +27,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends EntityMixin {
 
+    @Unique
+    private LivingEntity getLivingEntity() {
+        return (LivingEntity) (Object) this;
+    }
+
     @Override
     @Unique
     public void initServersideDataTracker(ServersideDataTracker.Builder builder) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
             POUtils.initNonPlayerData(thisEntity, builder);
         }
@@ -38,7 +43,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     public void livingEntity$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
             POUtils.readNonPlayerData(thisEntity, nbt);
         }
@@ -46,7 +51,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     public void livingEntity$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
             POUtils.writeNonPlayerData(thisEntity, nbt);
         }
@@ -62,7 +67,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     public void livingEntity$damage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
 
         if(source.getAttacker() instanceof PlayerEntity playerAttacker) {
             if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
@@ -88,7 +93,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     public void livingEntity$setHealth(float health, CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity instanceof PlayerEntity player) {
             if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
                 ci.cancel();
@@ -98,7 +103,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "tick", at = @At("TAIL"))
     public void livingEntity$tick(CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
 
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) {
             if (thisEntity.getWorld() instanceof ServerWorld serverWorld && thisEntity.age % 5 == 0) {
@@ -117,13 +122,13 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "drop", at = @At("HEAD"), cancellable = true)
     public void livingEntity$drop(ServerWorld world, DamageSource damageSource, CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) ci.cancel();
     }
 
     @Inject(method = "isDead", at = @At("RETURN"), cancellable = true)
     public void livingEntity$isDead(CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             cir.setReturnValue(false);
         }
@@ -131,7 +136,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
 
     @Inject(method = "canHaveStatusEffect", at = @At("HEAD"), cancellable = true)
     public void livingEntity$canHaveStatusEffect(StatusEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = (LivingEntity) (Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && effect.getEffectType().value().getCategory() == StatusEffectCategory.HARMFUL) {
             cir.setReturnValue(false);
         }
