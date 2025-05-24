@@ -2,7 +2,6 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BeaconBlockEntity;
 import net.minecraft.block.entity.BlockEntity;

@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ConsumableComponent;
@@ -39,7 +40,12 @@ public class ItemMixin {
                 if(!user.isCreative()) stack.decrement(1);
                 cir.setReturnValue(component.consume(user, stack, hand));
             } else if (!nbt.getNbt().getBoolean("isPOTome").orElse(false) && POUtils.isOmnipotent(user)) {
-                if (Main.CONFIG.permaOmnipotents.containsKey(user.getNameForScoreboard()) || Main.CONFIG.permaOmnipotents.containsKey("*") || POUtils.isTrueEnlightened(user)) {
+
+                boolean cannotLoseEnlightenment = false;
+                POPlayerConfig config = POUtils.getConfigForPlayer(user);
+                if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
+
+                if (cannotLoseEnlightenment) {
                     if (!world.isClient)
                         user.sendMessage(Text.translatable("message.projectomnipotence.failed_descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                     cir.setReturnValue(ActionResult.FAIL);

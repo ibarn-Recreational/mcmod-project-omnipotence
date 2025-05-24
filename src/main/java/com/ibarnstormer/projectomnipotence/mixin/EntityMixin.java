@@ -25,6 +25,11 @@ public abstract class EntityMixin implements ServerTrackedData {
 
     @Unique private ServersideDataTracker serversideDataTracker;
 
+    @Unique
+    private Entity getEntity() {
+        return (Entity) (Object) this;
+    }
+
     @Inject(method = "<init>", at = @At("TAIL"))
     public void entity$init(EntityType type, World world, CallbackInfo ci) {
         ServersideDataTracker.Builder builder = new ServersideDataTracker.Builder((Entity) (Object) this);
@@ -34,13 +39,13 @@ public abstract class EntityMixin implements ServerTrackedData {
 
     @Inject(method = "isTeammate", at = @At("RETURN"), cancellable = true)
     public void entity$isTeammate(Entity other, CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(POUtils.isInHarmony(thisEntity) || POUtils.isInHarmony(other)) cir.setReturnValue(true);
     }
 
     @Inject(method = "isFireImmune", at = @At("RETURN"), cancellable = true)
     public void entity$isFireImmune(CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(POUtils.isInHarmony(thisEntity) && thisEntity instanceof PlayerEntity player) {
             if(POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable)
                 cir.setReturnValue(true);
@@ -49,7 +54,7 @@ public abstract class EntityMixin implements ServerTrackedData {
 
     @Inject(method = "getProjectileDeflection", at = @At("RETURN"), cancellable = true)
     public void entity$getProjectileDeflection(ProjectileEntity projectile, CallbackInfoReturnable<ProjectileDeflection> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(this.getType() == EntityType.PLAYER && POUtils.isInHarmony(thisEntity)) {
             cir.setReturnValue(POUtils.OMNIPOTENT_PROJECTILE_DEFLECTOR);
         }
@@ -57,7 +62,7 @@ public abstract class EntityMixin implements ServerTrackedData {
 
     @Inject(method = "setRemoved", at = @At("HEAD"), cancellable = true)
     public void entity$setRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
             ci.cancel();
         }
@@ -65,7 +70,7 @@ public abstract class EntityMixin implements ServerTrackedData {
 
     @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
     public void entity$remove(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
             ci.cancel();
         }

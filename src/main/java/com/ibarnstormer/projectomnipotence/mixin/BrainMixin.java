@@ -27,7 +27,7 @@ public class BrainMixin<E extends LivingEntity> {
     // Workaround initializer (technically not needed, works either way)
     @Unique
     private static Set<Activity> initSet() {
-        return ImmutableSet.of(Activity.AVOID, Activity.PANIC);
+        return ImmutableSet.of(Activity.AVOID, Activity.PANIC, Activity.FIGHT);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))

@@ -10,15 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @SuppressWarnings("unused")
-public class ModConfig {
+public class POConfig {
     private static final Gson GSON = new GsonBuilder()
             .setLenient().disableHtmlEscaping().setPrettyPrinting().create();
 
     private final String _comment_version = "Config version, set to -1 to prevent config updates.";
     private int version = Main.CONFIG_VERSION;
 
-    private final String _comment = "Permanent Omnipotents: (First argument: player username (or set to '*' for all players) | Second argument: number of starting entities enlightened)";
-    public Map<String, Integer> permaOmnipotents = new HashMap<>();
+    private final String _comment_PlayerConfig = "Player Configurations: Various modifiers for specific players";
+    public List<POPlayerConfig> playerConfigs = new ArrayList<>();
 
     private final String _comment_DamageReflect = "Damage Reflection Black List: Entries are in the format: 'namespace:entity_id' (e.g. minecraft:creeper) or '*' for all entities";
     public Set<String> damageReflectionBlackList = new HashSet<>();
@@ -43,7 +43,7 @@ public class ModConfig {
     public boolean omnipotentPlayerRenderParticlesClient = true;
 
     public boolean omnipotentPlayersCanBecomeInvulnerable = true;
-    public boolean omnipotentPlayersCanGainFlight = true;
+    public boolean omnipotentPlayersCanGainFlight = false;
     // public boolean omnipotentPlayersDampenExplosions = false;
     public boolean omnipotentPlayersDontGriefTrees = true;
     public boolean omnipotentPlayersReflectDamage = true;
@@ -52,8 +52,8 @@ public class ModConfig {
     public boolean carryOnCompat = true;
 
 
-    private ModConfig() {
-        permaOmnipotents.put("(Example Player Username Here)", 0);
+    private POConfig() {
+        playerConfigs.add(new POPlayerConfig("(Example Player Username Here)", "0", false, 0, 0));
 
         // Hard-coded entities that create soft-locks unless explicitly removed from the world
         removeOnEnlightenList.add("blue_skies:alchemist");
@@ -81,20 +81,20 @@ public class ModConfig {
         convertUponEnlightened.put("illageandportage:ragno", "minecraft:villager");
     }
 
-    public static ModConfig initConfig() {
+    public static POConfig initConfig() {
         try {
             File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), "ProjectOmnipotence.json");
-            ModConfig config;
+            POConfig config;
 
             // Load config if it exists
             if (configFile.exists()) {
                 String json = FileUtils.readFileToString(configFile, StandardCharsets.UTF_8);
-                config = GSON.fromJson(json, ModConfig.class);
+                config = GSON.fromJson(json, POConfig.class);
 
                 // Update config fields
                 if(config.version != Main.CONFIG_VERSION && config.version != -1) updateConfig(config);
             }
-            else config = new ModConfig();
+            else config = new POConfig();
 
             // Update the config
             FileUtils.writeStringToFile(configFile, GSON.toJson(config), StandardCharsets.UTF_8);
@@ -103,12 +103,12 @@ public class ModConfig {
         }
         catch(Exception e) {
             e.printStackTrace();
-            return new ModConfig();
+            return new POConfig();
         }
     }
 
-    private static void updateConfig(ModConfig config) {
-        ModConfig freshConfig = new ModConfig();
+    private static void updateConfig(POConfig config) {
+        POConfig freshConfig = new POConfig();
         config.version = freshConfig.version;
 
         config.damageReflectionBlackList.addAll(freshConfig.damageReflectionBlackList);

@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POEntityConversionHelper;
@@ -38,6 +39,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -49,11 +51,18 @@ import java.util.*;
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends EntityMixin {
 
+    @Shadow public abstract boolean isPlayer();
+
     @Unique
     private static final Identifier OMNIPOTENT_LUCK = Identifier.of(Main.MODID, "omnipotent_luck");
 
     @Unique
     private int eeDelta;
+
+    @Unique
+    private PlayerEntity getPlayer() {
+        return (PlayerEntity) (Object) this;
+    }
 
     @Override
     @Unique
@@ -63,19 +72,19 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     public void playerEntity$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         POUtils.readPlayerNbt(player, nbt);
     }
 
    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     public void playerEntity$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+       PlayerEntity player = this.getPlayer();
         POUtils.writePlayerNbt(player, nbt);
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     public void playerEntity$damage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         if (POUtils.isOmnipotent(player)) {
             if(source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClient() && !player.getAbilities().allowFlying && player.getY() <= world.getBottomY()) {
                 MinecraftServer server = player.getServer();
@@ -101,7 +110,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "damage", at = @At("TAIL"))
     public void playerEntity$damage_onDeath(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         if(POUtils.isOmnipotent(player) && player.isDead() && Main.CONFIG.omnipotentPlayersReflectDamage) {
             Entity attacker = source.getAttacker();
             if(attacker != null) attacker.kill(world);
@@ -110,7 +119,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "attack", at = @At("HEAD"))
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         if(POUtils.isOmnipotent(player) && player.getWorld() instanceof ServerWorld serverWorld) {
             float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
@@ -169,18 +178,16 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "tick", at = @At("TAIL"))
     public void playerEntity$tick(CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         World world = player.getWorld();
         if(world instanceof ServerWorld serverWorld) {
-            if ((Main.CONFIG.permaOmnipotents.containsKey(player.getNameForScoreboard()) || Main.CONFIG.permaOmnipotents.containsKey("*")) && !POUtils.isOmnipotent(player)) {
-                POUtils.grantOmnipotence(player, false);
-                Integer score = Main.CONFIG.permaOmnipotents.get(player.getNameForScoreboard());
-                POUtils.setEntitiesEnlightened(player, Math.max((score == null ? Main.CONFIG.permaOmnipotents.get("*") : score), POUtils.getEntitiesEnlightened(player)));
-            }
 
-            if (POUtils.isTrueEnlightened(player) && !POUtils.isOmnipotent(player)) {
-                POUtils.grantOmnipotence(player, false);
-                POUtils.setEntitiesEnlightened(player, Math.max((Math.min(10, Main.CONFIG.totalLuckLevels) * Main.CONFIG.luckLevelEntityGoal) + 1, POUtils.getEntitiesEnlightened(player)));
+            POPlayerConfig config = POUtils.getConfigForPlayer(player);
+
+            if(config != null) {
+                if(!POUtils.isOmnipotent(player) && config.enlightenedOnStart()) POUtils.grantOmnipotence(player, false);
+                int score = config.eeHandicap();
+                POUtils.setEntitiesEnlightened(player, Math.max(score, POUtils.getEntitiesEnlightened(player)));
             }
 
             EntityAttributeInstance playerLuck = player.getAttributeInstance(EntityAttributes.LUCK);
@@ -260,7 +267,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "onDeath", at = @At("HEAD"), cancellable = true)
     public void playerEntity$onDeath(DamageSource cause, CallbackInfo ci) {
-        PlayerEntity player = ((PlayerEntity) (Object) this);
+        PlayerEntity player = this.getPlayer();
         if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             ci.cancel();
         }
@@ -268,7 +275,7 @@ public abstract class PlayerEntityMixin extends EntityMixin {
 
     @Inject(method = "isCreative", at = @At("RETURN"), cancellable = true)
     public void playerEntity$isCreative(CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        PlayerEntity player = this.getPlayer();
         if(POUtils.isOmnipotent(player) && Main.CONFIG.carryOnCompat) {
             // Carry-on compat
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();

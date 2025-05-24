@@ -2,14 +2,12 @@ package com.ibarnstormer.projectomnipotence.utils;
 
 import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.ServerTrackedData;
 import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.block.BedBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.RespawnAnchorBlock;
+import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -52,15 +50,17 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.VillagerGossips;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class POUtils {
@@ -71,7 +71,7 @@ public class POUtils {
     private static final HashMap<Class<? extends LivingEntity>, TrackedData<Boolean>> livingEntityDataSet = new HashMap<>();
     private static final HashMap<EntityType<? extends MobEntity>, POEntityConversionHelper<? extends MobEntity, ? extends MobEntity>> finalizers;
 
-    private static final ImmutableSet<UUID> trueEnlightened;
+    private static final ImmutableSet<POPlayerConfig> permaEnlightened;
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -91,11 +91,11 @@ public class POUtils {
     public static final ProjectileDeflection OMNIPOTENT_PROJECTILE_DEFLECTOR;
 
     static {
-        ImmutableSet.Builder<UUID> trueEnlightenedBuilder = new ImmutableSet.Builder<>();
+        ImmutableSet.Builder<POPlayerConfig> permaEnlightenedBuilder = new ImmutableSet.Builder<>();
 
-        trueEnlightenedBuilder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+        permaEnlightenedBuilder.add(new POPlayerConfig(null, "c7913f14-83b7-4c63-bfa6-7d06f51ba930", true, 0, 10));
 
-        trueEnlightened = trueEnlightenedBuilder.build();
+        permaEnlightened = permaEnlightenedBuilder.build();
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
@@ -171,15 +171,23 @@ public class POUtils {
     }
 
     public static void readPlayerNbt(PlayerEntity player, NbtCompound nbt) {
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), nbt.getBoolean("isOmnipotent").orElse(false));
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), nbt.getInt("EntitiesEnlightened").orElse(0));
+        try {
+            ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), nbt.getBoolean("isOmnipotent").orElse(false));
+            ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), nbt.getInt("EntitiesEnlightened").orElse(0));
+        }
+        catch(Exception ignored) {
+        }
     }
 
     public static void writePlayerNbt(PlayerEntity player, NbtCompound nbt) {
-        boolean isOmnipotent = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.IS_OMNIPOTENT());
-        int entitiesEnlightened = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
-        nbt.putBoolean("isOmnipotent", isOmnipotent);
-        nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
+        try {
+            boolean isOmnipotent = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.IS_OMNIPOTENT());
+            int entitiesEnlightened = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
+            nbt.putBoolean("isOmnipotent", isOmnipotent);
+            nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
+        }
+        catch(Exception ignored) {
+        }
     }
 
     private static TrackedData<Boolean> assignedEntityData(LivingEntity entity) {
@@ -195,13 +203,21 @@ public class POUtils {
     }
 
     public static void readNonPlayerData(LivingEntity entity, NbtCompound nbt) {
-        TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-        ((ServerTrackedData) entity).getServersideDataTracker().set(inHarmony, nbt.getBoolean("inHarmony").orElse(false));
+        try {
+            TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
+            ((ServerTrackedData) entity).getServersideDataTracker().set(inHarmony, nbt.getBoolean("inHarmony").orElse(false));
+        }
+        catch(Exception ignored) {
+        }
     }
 
     public static void writeNonPlayerData(LivingEntity entity, NbtCompound nbt) {
-        TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-        nbt.putBoolean("inHarmony", ((ServerTrackedData) entity).getServersideDataTracker().get(inHarmony));
+        try {
+            TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
+            nbt.putBoolean("inHarmony", ((ServerTrackedData) entity).getServersideDataTracker().get(inHarmony));
+        }
+        catch(Exception ignored) {
+        }
     }
 
     public static void grantOmnipotence(PlayerEntity player, boolean isCopyFrom) {
@@ -265,9 +281,17 @@ public class POUtils {
 
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             livingEntity.setAttacking(playerAttacker, 100);
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
+
             forceDropEquipment(livingEntity, serverWorld, livingEntity instanceof MobEntity mob ? (stack) -> {
                 ItemStack copy = stack.copy();
                 mob.dropStack(serverWorld, copy);
@@ -309,7 +333,7 @@ public class POUtils {
             }
 
             setInHarmony(livingEntity, true);
-            if(playerAttacker != null) setEntitiesEnlightened(playerAttacker, getEntitiesEnlightened(playerAttacker) + 1);
+            if(playerAttacker != null) setEntitiesEnlightened(playerAttacker, getEntitiesEnlightened(playerAttacker) + Math.abs(eeMultiplier));
             serverWorld.spawnParticles(ParticleTypes.END_ROD, livingEntity.getX(), livingEntity.getY() + livingEntity.getBoundingBox().getLengthY() / 2, livingEntity.getZ(), 20, (Math.random() * livingEntity.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
     }
@@ -317,6 +341,13 @@ public class POUtils {
 
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, BlockPos beaconPos) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             forceDropEquipment(livingEntity, serverWorld, (stack) -> {
                 ItemStack copy = stack.copy();
                 ItemEntity itemEntity = new ItemEntity(serverWorld, beaconPos.getX() + 0.5, beaconPos.up().getY(), beaconPos.getZ() + 0.5, copy);
@@ -372,7 +403,7 @@ public class POUtils {
             }
 
             setInHarmony(livingEntity, true);
-            if(playerAttacker != null) setEntitiesEnlightened(playerAttacker, getEntitiesEnlightened(playerAttacker) + 1);
+            if(playerAttacker != null) setEntitiesEnlightened(playerAttacker, getEntitiesEnlightened(playerAttacker) + Math.abs(eeMultiplier));
             serverWorld.spawnParticles(ParticleTypes.END_ROD, livingEntity.getX(), livingEntity.getY() + livingEntity.getBoundingBox().getLengthY() / 2, livingEntity.getZ(), 20, (Math.random() * livingEntity.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * livingEntity.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
     }
@@ -418,35 +449,20 @@ public class POUtils {
         }
     }
 
-    public static boolean isTrueEnlightened(PlayerEntity player) {
-        return trueEnlightened.contains(player.getUuid());
+    private static boolean isPermaEnlightened(PlayerEntity player) {
+        return permaEnlightened.stream().anyMatch(config -> Objects.equals(config.stringUUID(), player.getUuidAsString()));
     }
 
     public static void spawnEnlightenmentParticles(Entity entity, ServerWorld server) {
-        double deltaX = Math.min(entity.getBoundingBox().getLengthX(), Math.max(-entity.getBoundingBox().getLengthX(), (Math.random() * entity.getBoundingBox().getLengthX() / 2) * 1.25));
-        double deltaY = Math.min(entity.getBoundingBox().getLengthY() / 3, Math.max(-entity.getBoundingBox().getLengthY() / 3, (Math.random() * entity.getBoundingBox().getLengthY() / 3) * 1.25));
-        double deltaZ = Math.min(entity.getBoundingBox().getLengthZ(), Math.max(-entity.getBoundingBox().getLengthZ(), (Math.random() * entity.getBoundingBox().getLengthZ() / 2) * 1.25));
-
         for(ServerPlayerEntity player : server.getPlayers()) {
             if(entity.getUuid() != player.getUuid() || Main.CONFIG.omnipotentPlayerParticlesLocal)
-                server.spawnParticles(player, ParticleTypes.END_ROD, false, false, entity.getX(), entity.getY() + entity.getBoundingBox().getLengthY() / 2, entity.getZ(), 1, deltaX, deltaY, deltaZ, 0);
+                server.spawnParticles(player, ParticleTypes.END_ROD, false, false, entity.getParticleX(0.5), entity.getRandomBodyY(), entity.getParticleZ(0.5), 1, 0, 0, 0, 0);
         }
     }
 
     public static void spawnEnlightenmentParticlesClient(ClientPlayerEntity player, ClientWorld world) {
-
-        double deltaX = Math.min(player.getBoundingBox().getLengthX(), Math.max(-player.getBoundingBox().getLengthX(), (Math.random() * player.getBoundingBox().getLengthX() / 2) * 1.25));
-        double deltaY = Math.min(player.getBoundingBox().getLengthY() / 3, Math.max(-player.getBoundingBox().getLengthY() / 3, (Math.random() * player.getBoundingBox().getLengthY() / 3) * 1.25));
-        double deltaZ = Math.min(player.getBoundingBox().getLengthZ(), Math.max(-player.getBoundingBox().getLengthZ(), (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 1.25));
-
-        Random random = world.random;
-
-        double g = random.nextGaussian() * deltaX;
-        double h = random.nextGaussian() * deltaY;
-        double j = random.nextGaussian() * deltaZ;
-
         if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
-            world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getX() + g, player.getY() + player.getBoundingBox().getLengthY() / 2 + h, player.getZ() + j, 0, 0, 0);
+            world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getParticleX(0.5), player.getRandomBodyY(), player.getParticleZ(0.5), 0, 0, 0);
         }
     }
 
@@ -466,7 +482,7 @@ public class POUtils {
     }
 
     public static void forceDropEquipment(LivingEntity entity, World world, Consumer<ItemStack> callback) {
-        if(world instanceof ServerWorld && entity.getType() != EntityType.PLAYER) {
+        if(world instanceof ServerWorld serverWorld && entity.getType() != EntityType.PLAYER) {
             if(entity instanceof MobEntity mob) {
                 for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                     ItemStack stack = mob.getEquippedStack(slot);
@@ -474,58 +490,174 @@ public class POUtils {
                     mob.getEquippedStack(slot).setCount(0);
                 }
             }
+            // For hardcoded loot tables
+            entity.dropEquipment(serverWorld, world.getDamageSources().generic(), true);
         }
+    }
+
+    public static @Nullable POPlayerConfig getConfigForPlayer(@Nullable PlayerEntity player) {
+        if(player != null) {
+            if (isPermaEnlightened(player)) {
+                return permaEnlightened.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                        configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUuid();
+
+                    if(playerUUID == null) return false;
+                    else return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            } else {
+                return Main.CONFIG.playerConfigs.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                       configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUuid();
+
+                    if(playerUUID == null) return false;
+                    else return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            }
+        }
+        else return null;
     }
 
     public static void respawnPlayer(ServerPlayerEntity player) {
         // Sanity check
         if (!player.getWorld().isClient()) {
-            ServerPlayerEntity.Respawn respawn = player.getRespawn();
-
-
-            BlockPos pos = respawn != null ? respawn.pos() : player.getServerWorld().getSpawnPos();
-            RegistryKey<World> key = respawn != null ? respawn.dimension() : player.getServerWorld().getRegistryKey();
 
             MinecraftServer server = player.getServer();
+
             if (server != null) {
-                ServerWorld world = player.getServer().getWorld(key);
+                ServerWorld world = player.getServerWorld();
 
                 if (world != null) {
-                    if (pos == null) pos = world.getSpawnPos();
 
-                    Optional<Vec3d> finalPos = findRespawnPosition(world, pos, respawn != null ? respawn.angle() : 0.0F, true, true);
-                    BlockPos finalPos1 = pos;
+                    Optional<Vec3d> finalPos = findRespawnPosition(world, player);
+                    BlockPos fallback = server.getOverworld().getSpawnPos();
 
                     player.fallDistance = 0.0F;
-                    finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, PositionFlag.ROT, player.getYaw(), player.getPitch(), false), () -> player.teleport(world, finalPos1.getX(), finalPos1.getY() + 1, finalPos1.getZ(), PositionFlag.ROT, player.getYaw(), player.getPitch(), false));
+                    finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, PositionFlag.ROT, player.getYaw(), player.getPitch(), false), () -> player.teleport(world, fallback.getX(), fallback.getY() + 1, fallback.getZ(), PositionFlag.ROT, player.getYaw(), player.getPitch(), false));
                 }
             }
         }
     }
 
-    private static Optional<Vec3d> findRespawnPosition(ServerWorld world, BlockPos pos, float spawnAngle, boolean spawnForced, boolean alive) {
-        BlockState blockState = world.getBlockState(pos);
-        Block block = blockState.getBlock();
-        if (block instanceof RespawnAnchorBlock && (spawnForced || blockState.get(RespawnAnchorBlock.CHARGES) > 0) && RespawnAnchorBlock.isNether(world)) {
-            Optional<Vec3d> optional = RespawnAnchorBlock.findRespawnPosition(EntityType.PLAYER, world, pos);
-            if (!spawnForced && !alive && optional.isPresent()) {
-                world.setBlockState(pos, blockState.with(RespawnAnchorBlock.CHARGES, blockState.get(RespawnAnchorBlock.CHARGES) - 1), Block.NOTIFY_ALL);
+    private static Optional<Vec3d> findRespawnPosition(ServerWorld world, LivingEntity entity) {
+        Vec3d vec3d = new Vec3d(entity.getX(), 0.0, entity.getZ());
+        Vec3d copy = vec3d;
+        Vec3d best = vec3d;
+
+        double minDistance = Double.MAX_VALUE;
+        double distance;
+
+        boolean foundCloseBy = false;
+
+        // Cardinals
+        for(int i = 0; i < 4; i++) {
+            for(int x = 16; x > 0; x--) {
+                if(isChunkEmpty(world, vec3d)) vec3d = vec3d.add(i == 0 ? 16.0D : i == 2 ? -16.0D : 0.0D, 0.0D, i == 1 ? 16.0D : i == 3 ? -16.0D : 0.0D);
+                else {
+                    foundCloseBy = true;
+                    distance = entity.squaredDistanceTo(vec3d);
+                    if(distance < minDistance) {
+                        minDistance = distance;
+                        best = vec3d;
+                    }
+                    break;
+                }
             }
-            return optional;
+            vec3d = copy;
         }
-        if (block instanceof BedBlock && BedBlock.isBedWorking(world)) {
-            return BedBlock.findWakeUpPosition(EntityType.PLAYER, world, pos, blockState.get(BedBlock.FACING), spawnAngle);
+
+        // Diagonals
+        for(int i = 1; i < 5; i++) {
+            for(int x = 16; x > 0; x--) {
+                if(isChunkEmpty(world, vec3d)) vec3d = vec3d.add(i <= 2 ? 16.0D : -16.0D, 0.0D, i % 2 == 1 ? 16.0D : -16.0D);
+                else {
+                    foundCloseBy = true;
+                    distance = entity.squaredDistanceTo(vec3d);
+                    if(distance < minDistance) {
+                        minDistance = distance;
+                        best = vec3d;
+                    }
+                    break;
+                }
+            }
+            vec3d = copy;
         }
-        if (!spawnForced) {
-            return Optional.empty();
+
+        if(!foundCloseBy) {
+            // Far Cardinals
+            for (int i = 0; i < 4; i++) {
+                for (int x = 16; x > 0; x--) {
+                    if (isChunkEmpty(world, vec3d))
+                        vec3d = vec3d.add(vec3d.multiply(i == 0 ? 16.0D : i == 2 ? -16.0D : 0.0D, 0.0D, i == 1 ? 16.0D : i == 3 ? -16.0D : 0.0D));
+                    else {
+                        distance = entity.squaredDistanceTo(vec3d);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            best = vec3d;
+                        }
+                        break;
+                    }
+                }
+                vec3d = copy;
+            }
+
+            // Far Diagonals
+            for (int i = 1; i < 5; i++) {
+                for (int x = 16; x > 0; x--) {
+                    if (isChunkEmpty(world, vec3d))
+                        vec3d = vec3d.add(vec3d.multiply(i <= 2 ? 16.0D : -16.0D, 0.0D, i % 2 == 1 ? 16.0D : -16.0D));
+                    else {
+                        distance = entity.squaredDistanceTo(vec3d);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            best = vec3d;
+                        }
+                        break;
+                    }
+                }
+                vec3d = copy;
+            }
         }
-        boolean bl = block.canMobSpawnInside(blockState);
-        BlockState blockState2 = world.getBlockState(pos.up());
-        boolean bl2 = blockState2.getBlock().canMobSpawnInside(blockState2);
-        if (bl && bl2) {
-            return Optional.of(new Vec3d((double)pos.getX() + 0.5, (double)pos.getY() + 0.1, (double)pos.getZ() + 0.5));
+
+        AtomicReference<Boolean> foundSolid = new AtomicReference<>(false);
+        AtomicReference<Vec3d> vec3d1 = new AtomicReference<>(null);
+
+        Chunk chunk = world.getChunk(MathHelper.floor(best.x / 16.0), MathHelper.floor(best.z / 16.0));
+        chunk.forEachBlockMatchingPredicate(AbstractBlock.AbstractBlockState::isSolid, (pos, state) -> {
+            if(!foundSolid.get()) {
+                vec3d1.set(pos.toCenterPos());
+                foundSolid.set(true);
+            }
+        });
+
+        int i = 0;
+        while (!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() || i > Short.MAX_VALUE) {
+            vec3d1.set(vec3d1.get().add(0, 1, 0));
+            i++;
         }
-        return Optional.empty();
+
+        vec3d = vec3d1.get().add(0.0, 1.0, 0.0);
+        return Optional.of(vec3d);
+    }
+
+    private static boolean isChunkEmpty(ServerWorld world, Vec3d pos) {
+        return world.getChunk(MathHelper.floor(pos.x / 16.0), MathHelper.floor(pos.z / 16.0)).getHighestNonEmptySection() == -1;
     }
 
 }

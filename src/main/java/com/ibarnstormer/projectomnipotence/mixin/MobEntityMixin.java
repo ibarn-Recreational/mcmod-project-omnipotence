@@ -8,6 +8,7 @@ import net.minecraft.entity.conversion.EntityConversionContext;
 import net.minecraft.entity.mob.MobEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,6 +19,11 @@ public class MobEntityMixin<T extends MobEntity> {
 
     @Shadow
     private LivingEntity target;
+
+    @Unique
+    private MobEntity getMob() {
+        return (MobEntity) (Object) this;
+    }
 
     @Inject(method = "canTarget", at = @At("RETURN"), cancellable = true)
     public void mobEntity$canTarget(EntityType<?> type, CallbackInfoReturnable<Boolean> cir) {
@@ -31,7 +37,7 @@ public class MobEntityMixin<T extends MobEntity> {
 
     @Inject(method = "convertTo(Lnet/minecraft/entity/EntityType;Lnet/minecraft/entity/conversion/EntityConversionContext;Lnet/minecraft/entity/SpawnReason;Lnet/minecraft/entity/conversion/EntityConversionContext$Finalizer;)Lnet/minecraft/entity/mob/MobEntity;", at = @At("RETURN"), cancellable = true)
     public void mobEntity$convertTo(EntityType<T> entityType, EntityConversionContext context, SpawnReason reason, EntityConversionContext.Finalizer<T> finalizer, CallbackInfoReturnable<T> cir) {
-        MobEntity thisMob = (MobEntity) (Object) this;
+        MobEntity thisMob = this.getMob();
         if(POUtils.isInHarmony(thisMob)) {
             T converionResult = cir.getReturnValue();
             POUtils.setInHarmony(converionResult, true);
