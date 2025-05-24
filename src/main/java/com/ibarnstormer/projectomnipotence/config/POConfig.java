@@ -53,7 +53,7 @@ public class POConfig {
 
 
     private POConfig() {
-        playerConfigs.add(new POPlayerConfig("(Example  Player Username Here)", "0", false, 0, 0));
+        playerConfigs.add(new POPlayerConfig("(Example Player Username Here)", "0", false, 0, 0));
 
         // Hard-coded entities that create soft-locks unless explicitly removed from the world
         removeOnEnlightenList.add("blue_skies:alchemist");
