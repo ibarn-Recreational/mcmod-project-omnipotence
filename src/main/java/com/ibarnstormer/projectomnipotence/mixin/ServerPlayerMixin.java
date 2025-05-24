@@ -15,6 +15,7 @@ import net.minecraft.util.Unit;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -28,11 +29,16 @@ public abstract class ServerPlayerMixin extends Player {
         super(p_250508_, p_250289_, p_251702_, p_252153_);
     }
 
+    @Unique
+    private ServerPlayer getServerPlayer() {
+        return (ServerPlayer) (Object) this;
+    }
+
     @Inject(method = "startSleepInBed", at = @At("RETURN"), cancellable = true)
     public void serverPlayer$startSleepInBed(BlockPos p_9115_, CallbackInfoReturnable<Either<Player.BedSleepingProblem, Unit>> cir) {
         cir.getReturnValue().ifLeft((reason) -> {
             if(reason == Player.BedSleepingProblem.NOT_SAFE) {
-                ServerPlayer player = (ServerPlayer) (Object) this;
+                ServerPlayer player = this.getServerPlayer();
                 if(POUtils.isOmnipotent(player)) {
                     cir.setReturnValue(super.startSleepInBed(p_9115_).ifRight((unit) -> {
                         player.awardStat(Stats.SLEEP_IN_BED);
@@ -51,7 +57,7 @@ public abstract class ServerPlayerMixin extends Player {
 
     @Inject(method = "isCreative", at = @At("RETURN"), cancellable = true)
     public void serverPlayer$isCreative(CallbackInfoReturnable<Boolean> cir) {
-        ServerPlayer player = (ServerPlayer) (Object) this;
+        ServerPlayer player = this.getServerPlayer();
         if(POUtils.isOmnipotent(player) && Main.CONFIG.carryOnCompat) {
             // Carry-on compat
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();

@@ -36,6 +36,11 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     @Unique
     private static final EntityDataAccessor<Boolean> IN_HARMONY = SynchedEntityData.defineId(LivingEntity.class, EntityDataSerializers.BOOLEAN);
 
+    @Unique
+    private LivingEntity getLivingEntity() {
+        return (LivingEntity) (Object) this;
+    }
+    
     protected LivingEntityMixin(EntityType<? extends LivingEntity> type, Level level) {
         super(type, level);
     }
@@ -65,7 +70,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
 
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     public void modulateDamage(DamageSource p_21016_, float p_21017_, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
 
         if(p_21016_.getEntity() instanceof Player playerAttacker) {
             if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
@@ -94,7 +99,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     public void omniInvulnerability(float value, CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && value < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
             ci.cancel();
         }
@@ -102,7 +107,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
 
     @Inject(method = "tick", at = @At("HEAD"))
     public void harmonicTick(CallbackInfo ci) {
-        LivingEntity thisEntity = (LivingEntity)(Object) this;
+        LivingEntity thisEntity = this.getLivingEntity();
         if(getHarmonicState()) {
             if(level() instanceof ServerLevel server && thisEntity.tickCount % 5 == 0) {
                 POUtils.spawnEnlightenmentParticles(thisEntity, server);

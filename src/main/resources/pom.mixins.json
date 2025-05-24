@@ -22,7 +22,6 @@
     "MobBucketItemMixin",
     "MobMixin",
     "PlayerEntityMixin",
-    "ProjectileEntityMixin",
     "ServerPlayerGameModeMixin",
     "ServerPlayerMixin",
     "TrialSpawnerMixin",

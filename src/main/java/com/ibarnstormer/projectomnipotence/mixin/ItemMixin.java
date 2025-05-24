@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
 
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -36,7 +37,12 @@ public class ItemMixin {
                 stack.shrink(1);
                 cir.setReturnValue(InteractionResultHolder.consume(stack));
             } else if (customData != null && customData.contains("isPOTomeReverse") && POUtils.isOmnipotent(user)) {
-                if(Main.CONFIG.permaOmnipotents.containsKey(user.getScoreboardName()) || Main.CONFIG.permaOmnipotents.containsKey("*") || POUtils.isTrueEnlightened(user)) {
+
+                boolean cannotLoseEnlightenment = false;
+                POPlayerConfig config = POUtils.getConfigForPlayer(user);
+                if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
+
+                if(cannotLoseEnlightenment) {
                     if (!level.isClientSide)
                         user.displayClientMessage(Component.translatable("message.projectomnipotence.failed_descend").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                     cir.setReturnValue(InteractionResultHolder.fail(stack));

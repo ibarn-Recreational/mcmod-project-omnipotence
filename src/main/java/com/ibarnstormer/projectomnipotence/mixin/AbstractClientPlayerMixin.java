@@ -4,6 +4,7 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.client.player.AbstractClientPlayer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -13,9 +14,14 @@ import java.util.List;
 @Mixin(AbstractClientPlayer.class)
 public class AbstractClientPlayerMixin {
 
+    @Unique
+    private AbstractClientPlayer getClientPlayer() {
+        return (AbstractClientPlayer) (Object) this;
+    }
+
     @Inject(method = "isCreative", at = @At("RETURN"), cancellable = true)
     public void abstractClientPlayer$isCreative(CallbackInfoReturnable<Boolean> cir) {
-        AbstractClientPlayer player = (AbstractClientPlayer) (Object) this;
+        AbstractClientPlayer player = this.getClientPlayer();
         if(POUtils.isOmnipotent(player) && Main.CONFIG.carryOnCompat) {
             // Carry-on compat
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();

@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,10 +16,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Entity.class)
 public class EntityMixin {
 
+    @Unique
+    private Entity getEntity() {
+        return (Entity) (Object) this;
+    }
 
     @Inject(method = "isAlliedTo(Lnet/minecraft/world/entity/Entity;)Z", at = @At("RETURN"), cancellable = true)
     public void teamMate(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof HarmonicEntity harmonicEntity) {
             if(harmonicEntity.getHarmonicState()) {
                 cir.setReturnValue(true);
@@ -34,7 +39,7 @@ public class EntityMixin {
 
     @Inject(method = "fireImmune", at = @At("RETURN"), cancellable = true)
     public void entity$fireImmune(CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             cir.setReturnValue(true);
         }
@@ -42,7 +47,7 @@ public class EntityMixin {
 
     @Inject(method = "deflection", at = @At("RETURN"), cancellable = true)
     public void entity$getProjectileDeflection(Projectile projectile, CallbackInfoReturnable<ProjectileDeflection> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player)) {
             cir.setReturnValue(POUtils.OMNIPOTENT_PROJECTILE_DEFLECTOR);
         }
@@ -50,7 +55,7 @@ public class EntityMixin {
 
     @Inject(method = "setRemoved", at = @At("HEAD"), cancellable = true)
     public void entity$setRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
             ci.cancel();
         }
@@ -58,7 +63,7 @@ public class EntityMixin {
 
     @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
     public void entity$remove(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
             ci.cancel();
         }

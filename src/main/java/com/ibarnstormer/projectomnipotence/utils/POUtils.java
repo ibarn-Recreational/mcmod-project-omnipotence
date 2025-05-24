@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence.utils;
 
 import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.mixin.LivingEntityInvoker;
 import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
@@ -67,7 +68,7 @@ import java.util.function.Consumer;
 
 public class POUtils {
 
-    private static final ImmutableSet<UUID> trueEnlightened;
+    private static final ImmutableSet<POPlayerConfig> permaEnlightened;
 
     public static final HashMap<EntityType<? extends Mob>, Consumer<Tuple<? extends Mob, ? extends Mob>>> finalizers;
 
@@ -90,11 +91,11 @@ public class POUtils {
     public static final ProjectileDeflection OMNIPOTENT_PROJECTILE_DEFLECTOR;
 
     static {
-        ImmutableSet.Builder<UUID> trueEnlightenedBuilder = new ImmutableSet.Builder<>();
+        ImmutableSet.Builder<POPlayerConfig> permaEnlightenedBuilder = new ImmutableSet.Builder<>();
 
-        trueEnlightenedBuilder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
+        permaEnlightenedBuilder.add(new POPlayerConfig(null, "c7913f14-83b7-4c63-bfa6-7d06f51ba930", true, 0, 10));
 
-        trueEnlightened = trueEnlightenedBuilder.build();
+        permaEnlightened = permaEnlightenedBuilder.build();
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.level() instanceof ServerLevel serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.CONDUIT_ACTIVATE, hitEntity.getSoundSource(), 1.0f, 2.0f);
@@ -197,6 +198,13 @@ public class POUtils {
 
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
             ((LivingEntityInvoker) thisEntity).dropMobExperience(playerAttacker);
@@ -245,7 +253,7 @@ public class POUtils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(playerAttacker != null) incrementEnlightened(1, playerAttacker);
+            if(playerAttacker != null) incrementEnlightened(Math.abs(eeMultiplier), playerAttacker);
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
@@ -254,6 +262,13 @@ public class POUtils {
 
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, BlockPos beaconPos) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             if(playerAttacker != null && level instanceof ServerLevel serverLevel) {
                 thisEntity.setLastHurtByPlayer(playerAttacker);
                 thisEntity.captureDrops(new ArrayList<>());
@@ -310,7 +325,7 @@ public class POUtils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(playerAttacker != null) incrementEnlightened(1, playerAttacker);
+            if(playerAttacker != null) incrementEnlightened(Math.abs(eeMultiplier), playerAttacker);
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
@@ -329,8 +344,8 @@ public class POUtils {
         loottable.getRandomItems(lootparams, target.getLootTableSeed(), callback);
     }
 
-    public static boolean isTrueEnlightened(Player player) {
-        return trueEnlightened.contains(player.getUUID());
+    private static boolean isPermaEnlightened(Player player) {
+        return permaEnlightened.stream().anyMatch(config -> Objects.equals(config.stringUUID(), player.getStringUUID()));
     }
 
     public static boolean enlightenedPlayerInCreative(Player player) {
@@ -364,6 +379,43 @@ public class POUtils {
             }
             ((LivingEntityInvoker) entity).dropCustomLoot(serverLevel, player != null ? serverLevel.damageSources().playerAttack(player) : serverLevel.damageSources().generic(), true);
         }
+    }
+
+    public static @Nullable POPlayerConfig getConfigForPlayer(@Nullable Player player) {
+        if(player != null) {
+            if (isPermaEnlightened(player)) {
+                return permaEnlightened.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                        configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUUID();
+
+                    return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            } else {
+                return Main.CONFIG.playerConfigs.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                        configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUUID();
+
+                    return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            }
+        }
+        else return null;
     }
 
     public static void respawnPlayer(ServerPlayer player) {

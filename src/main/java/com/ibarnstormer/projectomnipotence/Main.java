@@ -1,6 +1,7 @@
 package com.ibarnstormer.projectomnipotence;
 
-import com.ibarnstormer.projectomnipotence.config.ModConfig;
+import com.ibarnstormer.projectomnipotence.config.POConfig;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.event.ModEvents;
 import com.ibarnstormer.projectomnipotence.network.UpdateOmnipotentDataPayload;
@@ -35,9 +36,9 @@ import org.slf4j.Logger;
 public class Main
 {   
     public static final String MODID = "projectomnipotence";
-    public static ModConfig CONFIG = ModConfig.initConfig();
+    public static POConfig CONFIG = POConfig.initConfig();
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final int CONFIG_VERSION = 4;
+    public static final int CONFIG_VERSION = 5;
 
     public Main(IEventBus modEventBus, ModContainer modContainer)
     {
@@ -118,7 +119,12 @@ public class Main
         Entity target = EntityArgument.getEntity(context, "target");
         if(target instanceof Player player) {
             if(POUtils.isOmnipotent(player)) {
-                if (!Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) && !POUtils.isTrueEnlightened(player)) {
+
+                boolean cannotLoseEnlightenment = false;
+                POPlayerConfig config = POUtils.getConfigForPlayer(player);
+                if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
+
+                if (cannotLoseEnlightenment) {
                     POUtils.setOmnipotent(false, player.level(), player, true);
                     context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                 }

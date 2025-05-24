@@ -11,13 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @SuppressWarnings("unused")
-public class ModConfig {
+public class POConfig {
 
     private static final Gson GSON = new GsonBuilder()
             .disableHtmlEscaping().setLenient().setPrettyPrinting().create();
 
     private final String _comment_version = "Config version, set to -1 to prevent config updates.";
     private int version = Main.CONFIG_VERSION;
+
+    private final String _comment_PlayerConfig = "Player Configurations: Various modifiers for specific players";
+    public List<POPlayerConfig> playerConfigs = new ArrayList<>();
 
     private final String _comment = "Permanent Omnipotents: (First argument: player username (or set to '*' for all players) | Second argument: number of starting entities enlightened)";
     public Map<String, Integer> permaOmnipotents = new HashMap<>();
@@ -54,8 +57,8 @@ public class ModConfig {
     public boolean carryOnCompat = true;
 
 
-    private ModConfig() {
-        permaOmnipotents.put("(Example Player Username Here)", 0);
+    private POConfig() {
+        playerConfigs.add(new POPlayerConfig("(Example Player Username Here)", "0", false, 0, 0));
 
         // Hard-coded entities that cause crashes when damage is reflected back
         damageReflectionBlackList.add("cataclysm:lionfish");
@@ -87,20 +90,20 @@ public class ModConfig {
 
     }
 
-    public static ModConfig initConfig() {
+    public static POConfig initConfig() {
         try {
             File configFile = new File(FMLPaths.CONFIGDIR.get().toString(), "ProjectOmnipotence.json");
-            ModConfig config;
+            POConfig config;
 
             // Load config if it exists
             if (configFile.exists()) {
                 String json = FileUtils.readFileToString(configFile, StandardCharsets.UTF_8);
-                config = GSON.fromJson(json, ModConfig.class);
+                config = GSON.fromJson(json, POConfig.class);
 
                 // Update config fields
                 if(config.version != Main.CONFIG_VERSION && config.version != -1) updateConfig(config);
             }
-            else config = new ModConfig();
+            else config = new POConfig();
 
             // Update the config
             FileUtils.writeStringToFile(configFile, GSON.toJson(config), StandardCharsets.UTF_8);
@@ -109,12 +112,12 @@ public class ModConfig {
         }
         catch(Exception e) {
             e.printStackTrace();
-            return new ModConfig();
+            return new POConfig();
         }
     }
 
-    private static void updateConfig(ModConfig config) {
-        ModConfig freshConfig = new ModConfig();
+    private static void updateConfig(POConfig config) {
+        POConfig freshConfig = new POConfig();
         config.version = freshConfig.version;
 
         config.damageReflectionBlackList.addAll(freshConfig.damageReflectionBlackList);
