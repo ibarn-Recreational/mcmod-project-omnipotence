@@ -19,8 +19,8 @@ public class ModConfig {
     private final String _comment_version = "Config version, set to -1 to prevent config updates.";
     private int version = Main.CONFIG_VERSION;
 
-    private final String _comment = "Permanent Omnipotents: (First argument: player username (or set to '*' for all players) | Second argument: number of starting entities enlightened)";
-    public Map<String, Integer> permaOmnipotents = new HashMap<>();
+    private final String _comment_PlayerConfig = "Player Configurations: Various modifiers for specific players";
+    public List<POPlayerConfig> playerConfigs = new ArrayList<>();
 
     private final String _comment_DamageReflect = "Damage Reflection Black List: Entries are in the format: 'namespace:entity_id' (e.g. minecraft:creeper) or '*' for all entities";
     public Set<String> damageReflectionBlackList = new HashSet<>();
@@ -55,7 +55,7 @@ public class ModConfig {
 
 
     private ModConfig() {
-        permaOmnipotents.put("(Example Player Username Here)", 0);
+        playerConfigs.add(new POPlayerConfig("(Example Player Username Here)", "0", false, 0, 0));
 
         // Hard-coded entities that cause crashes when damage is reflected back
         damageReflectionBlackList.add("cataclysm:lionfish");

@@ -3,6 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
 import net.minecraft.ChatFormatting;
@@ -49,23 +50,25 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Unique
     private int eeDelta;
 
+    @Unique
+    private Player getPlayer() {
+        return (Player) (Object) this;
+    }
+
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> p_20966_, Level p_20967_) {
         super(p_20966_, p_20967_);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
     public void omniTick(CallbackInfo ci) {
-        Player player = (Player) (Object) this;
+        Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if((Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) || Main.CONFIG.permaOmnipotents.containsKey("*")) && !cap.isOmnipotent()) {
-                cap.setOmnipotent(true, level(), player, true);
-                Integer score = Main.CONFIG.permaOmnipotents.get(player.getScoreboardName());
-                cap.setEnlightenedEntities(Math.max((score == null ? Main.CONFIG.permaOmnipotents.get("*") : score.intValue()), cap.getEnlightenedEntities()));
-            }
+            POPlayerConfig config = Utils.getConfigForPlayer(player);
 
-            if(Utils.isTrueEnlightened(player) && !cap.isOmnipotent()) {
-                cap.setOmnipotent(true, level(), player, true);
-                cap.setEnlightenedEntities(Math.max((Math.min(10, Main.CONFIG.totalLuckLevels) * Main.CONFIG.luckLevelEntityGoal) + 1, cap.getEnlightenedEntities()));
+            if(config != null) {
+                if(!cap.isOmnipotent() && config.enlightenedOnStart()) cap.setOmnipotent(true, player.level(), player, true);
+                int score = config.eeHandicap();
+                cap.setEnlightenedEntities(Math.max(score, cap.getEnlightenedEntities()), player);
             }
 
             AttributeInstance playerLuck = player.getAttribute(Attributes.LUCK);
@@ -140,7 +143,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "hurt", at = @At("HEAD"), cancellable = true)
     public void modulateDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        Player player = (Player) (Object) this;
+        Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             Level world = player.level();
             if (cap.isOmnipotent()) {
@@ -171,7 +174,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "hurt", at = @At("TAIL"))
     public void onDeath(DamageSource p_36154_, float p_36155_, CallbackInfoReturnable<Boolean> cir) {
-        Player player = (Player) (Object) this;
+        Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             if(cap.isOmnipotent() && player.isDeadOrDying() && Main.CONFIG.omnipotentPlayersReflectDamage) {
                 Entity attacker = p_36154_.getEntity();
@@ -182,7 +185,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "attack", at = @At("HEAD"))
     public void onAttack(Entity p_36347_, CallbackInfo ci) {
-        Player player = (Player) (Object) this;
+        Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             if(cap.isOmnipotent() && !player.level().isClientSide) {
                 float f = EnchantmentHelper.getSweepingDamageRatio(player);

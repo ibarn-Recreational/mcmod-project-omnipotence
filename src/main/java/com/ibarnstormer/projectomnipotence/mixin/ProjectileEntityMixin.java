@@ -11,6 +11,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,9 +19,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Projectile.class)
 public class ProjectileEntityMixin {
 
+    @Unique
+    private Projectile getProjectile() {
+        return (Projectile) (Object) this;
+    }
+
     @Inject(method = "onHit", at = @At("HEAD"), cancellable = true)
     private void projectile$onHit(HitResult hitResult, CallbackInfo ci) {
-        Projectile projectile = (Projectile) (Object) this;
+        Projectile projectile = this.getProjectile();
         if(hitResult instanceof EntityHitResult entityHitResult) {
             Entity entity = entityHitResult.getEntity();
             entity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {

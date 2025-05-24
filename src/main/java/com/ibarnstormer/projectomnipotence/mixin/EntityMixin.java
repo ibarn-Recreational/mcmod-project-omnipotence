@@ -16,9 +16,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Entity.class)
 public class EntityMixin {
 
+    @Unique
+    private Entity getEntity() {
+        return (Entity) (Object) this;
+    }
+
     @Inject(method = "isAlliedTo(Lnet/minecraft/world/entity/Entity;)Z", at = @At("RETURN"), cancellable = true)
     public void teamMate(Entity p_20355_, CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         if(thisEntity instanceof HarmonicEntity harmonicEntity) {
             if(harmonicEntity.getHarmonicState()) {
                 cir.setReturnValue(true);
@@ -36,7 +41,7 @@ public class EntityMixin {
 
     @Inject(method = "fireImmune", at = @At("RETURN"), cancellable = true)
     public void entity$fireImmune(CallbackInfoReturnable<Boolean> cir) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             if(cap.isOmnipotent() && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
                 cir.setReturnValue(true);
@@ -46,7 +51,7 @@ public class EntityMixin {
 
     @Inject(method = "setRemoved", at = @At("HEAD"), cancellable = true)
     public void entity$setRemoved(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             if(cap.isOmnipotent() && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
                 ci.cancel();
@@ -56,7 +61,7 @@ public class EntityMixin {
 
     @Inject(method = "remove", at = @At("HEAD"), cancellable = true)
     public void entity$remove(Entity.RemovalReason reason, CallbackInfo ci) {
-        Entity thisEntity = (Entity) (Object) this;
+        Entity thisEntity = this.getEntity();
         thisEntity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             if(cap.isOmnipotent() && cap.getEnlightenedEntities() >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && reason == Entity.RemovalReason.KILLED) {
                 ci.cancel();

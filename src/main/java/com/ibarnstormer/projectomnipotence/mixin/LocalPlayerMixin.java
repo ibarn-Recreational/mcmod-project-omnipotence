@@ -8,6 +8,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -19,9 +20,14 @@ public abstract class LocalPlayerMixin extends AbstractClientPlayer {
         super(p_250460_, p_249912_);
     }
 
+    @Unique
+    private LocalPlayer getLocalPlayer() {
+        return (LocalPlayer) (Object) this;
+    }
+
     @Inject(method = "tick", at = @At("HEAD"))
     public void localPlayer$tick(CallbackInfo ci) {
-        LocalPlayer player = (LocalPlayer) (Object) this;
+        LocalPlayer player = this.getLocalPlayer();
 
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> {
 

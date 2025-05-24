@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -19,6 +20,11 @@ public class MobMixin<T extends Mob> {
 
     @Shadow
     private LivingEntity target;
+
+    @Unique
+    private Mob getMob() {
+        return (Mob) (Object) this;
+    }
 
     @Inject(method = "setTarget", at = @At("TAIL"))
     public void mob$setTarget(LivingEntity p_21544_, CallbackInfo ci) {
@@ -33,7 +39,7 @@ public class MobMixin<T extends Mob> {
 
     @Inject(method = "convertTo", at = @At("RETURN"), cancellable = true)
     public void mod$convertTo(EntityType<T> p_21407_, boolean p_21408_, CallbackInfoReturnable<T> cir) {
-        Mob thisMob = (Mob) (Object) this;
+        Mob thisMob = this.getMob();
         if(thisMob instanceof HarmonicEntity harmonicEntity && harmonicEntity.getHarmonicState()) {
             T converionResult = cir.getReturnValue();
             if(converionResult instanceof HarmonicEntity h) {

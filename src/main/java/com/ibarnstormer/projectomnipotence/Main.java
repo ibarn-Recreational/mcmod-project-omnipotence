@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence;
 
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.config.ModConfig;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.event.ModEvents;
 import com.ibarnstormer.projectomnipotence.network.ModNetwork;
@@ -36,7 +37,7 @@ public class Main
     public static final String MODID = "projectomnipotence";
     public static ModConfig CONFIG = ModConfig.initConfig();
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static final int CONFIG_VERSION = 4;
+    public static final int CONFIG_VERSION = 5;
 
     public Main()
     {
@@ -109,7 +110,12 @@ public class Main
         if(target instanceof Player player) {
             player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
                 if(cap.isOmnipotent()) {
-                    if (!Main.CONFIG.permaOmnipotents.containsKey(player.getScoreboardName()) && !Utils.isTrueEnlightened(player)) {
+
+                    boolean cannotLoseEnlightenment = false;
+                    POPlayerConfig config = Utils.getConfigForPlayer(player);
+                    if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
+
+                    if (cannotLoseEnlightenment) {
                         cap.setOmnipotent(false, player.level(), player, true);
                         context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                     }

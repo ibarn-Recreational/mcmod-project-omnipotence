@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.capability.OmnipotenceCapability;
+import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -44,7 +45,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Utils {
 
-    private static final ImmutableSet<UUID> trueEnlightened;
+    private static final ImmutableSet<POPlayerConfig> permaEnlightened;
+
 
     private static final Item[] discs = {
             Items.MUSIC_DISC_11,
@@ -62,13 +64,20 @@ public class Utils {
     };
 
     static {
-        ImmutableSet.Builder<UUID> builder = ImmutableSet.builder();
-        builder.add(UUID.fromString("c7913f14-83b7-4c63-bfa6-7d06f51ba930"));
-        trueEnlightened = builder.build();
+        ImmutableSet.Builder<POPlayerConfig> permaEnlightenedBuilder = new ImmutableSet.Builder<>();
+        permaEnlightenedBuilder.add(new POPlayerConfig(null, "c7913f14-83b7-4c63-bfa6-7d06f51ba930", true, 0, 10));
+        permaEnlightened = permaEnlightenedBuilder.build();
     }
 
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_, @Nullable OmnipotenceCapability cap) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             if(playerAttacker != null) thisEntity.setLastHurtByPlayer(playerAttacker);
             thisEntity.captureDrops(new ArrayList<>());
             thisEntity.dropExperience();
@@ -117,7 +126,7 @@ public class Utils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(cap != null) cap.incrementEnlightened(1);
+            if(cap != null) cap.incrementEnlightened(Math.abs(eeMultiplier));
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
@@ -126,6 +135,13 @@ public class Utils {
 
     public static void harmonizeEntityByBeacon(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, @Nullable OmnipotenceCapability cap) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
+
+            POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
+
+            int eeMultiplier;
+            if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
+            else eeMultiplier = 1;
+
             thisEntity.dropCustomDeathLoot(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
             if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
 
@@ -162,21 +178,58 @@ public class Utils {
             }
 
             harmonicEntity.setHarmonicState(true);
-            if(cap != null) cap.incrementEnlightened(1);
+            if(cap != null) cap.incrementEnlightened(Math.abs(eeMultiplier));
             if (level instanceof ServerLevel server) {
                 server.sendParticles(ParticleTypes.END_ROD, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 20, (Math.random() * thisEntity.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * thisEntity.getBoundingBox().getZsize() / 2) * 0.5, 0.075);
             }
         }
     }
 
-    public static boolean isTrueEnlightened(Player player) {
-        return trueEnlightened.contains(player.getUUID());
+    private static boolean isPermaEnlightened(Player player) {
+        return permaEnlightened.stream().anyMatch(config -> Objects.equals(config.stringUUID(), player.getStringUUID()));
     }
 
     public static double getLuckLevel(Player player) {
         AtomicReference<Double> d = new AtomicReference<>(0.0D);
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(cap -> d.set(Math.min(Main.CONFIG.totalLuckLevels, Math.floor(cap.getEnlightenedEntities() / (double) Main.CONFIG.luckLevelEntityGoal))));
         return d.get();
+    }
+
+    public static @Nullable POPlayerConfig getConfigForPlayer(@Nullable Player player) {
+        if(player != null) {
+            if (isPermaEnlightened(player)) {
+                return permaEnlightened.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                        configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUUID();
+
+                    return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            } else {
+                return Main.CONFIG.playerConfigs.stream().filter(config -> {
+                    UUID configUUID;
+                    try {
+                        configUUID = UUID.fromString(config.stringUUID());
+                    }
+                    catch(Exception ex) {
+                        configUUID = new UUID(0L, 0L);
+                    }
+
+                    UUID playerUUID = player.getUUID();
+
+                    return configUUID.equals(playerUUID) || config.isWildcard();
+
+                }).findFirst().orElse(null);
+            }
+        }
+        else return null;
     }
 
     public static void respawnPlayer(ServerPlayer player) {
