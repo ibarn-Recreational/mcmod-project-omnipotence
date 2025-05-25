@@ -99,6 +99,7 @@ public class POUtils {
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
+            projectile.setVelocity(projectile.getVelocity().multiply(2.0));
             ProjectileDeflection.SIMPLE.deflect(projectile, hitEntity, random);
         };
 
@@ -647,7 +648,7 @@ public class POUtils {
         });
 
         int i = 0;
-        while (!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() || i > Short.MAX_VALUE) {
+        while ((!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() && !world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir()) || i > Short.MAX_VALUE) {
             vec3d1.set(vec3d1.get().add(0, 1, 0));
             i++;
         }
