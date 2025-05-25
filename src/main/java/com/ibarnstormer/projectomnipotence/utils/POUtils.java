@@ -583,7 +583,7 @@ public class POUtils {
         });
 
         int i = 0;
-        while (!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() || i > Short.MAX_VALUE) {
+        while ((!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() && !world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up().up()).isAir()) || i > Short.MAX_VALUE) {
             vec3d1.set(vec3d1.get().add(0, 1, 0));
             i++;
         }
