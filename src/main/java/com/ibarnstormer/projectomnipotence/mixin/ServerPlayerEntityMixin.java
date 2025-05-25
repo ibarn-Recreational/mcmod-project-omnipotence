@@ -51,7 +51,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
                         Criteria.SLEPT_IN_BED.trigger(player);
                     }));
 
-                    if (!player.getServerWorld().isSleepingEnabled()) {
+                    if (!player.getWorld().isSleepingEnabled()) {
                         player.sendMessage(Text.translatable("sleep.not_possible"), true);
                     }
 

@@ -13,6 +13,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -41,22 +43,22 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
         super(type, pos, state);
     }
 
-    @Inject(method = "readNbt", at = @At("TAIL"))
-    private void beaconBlockEntity$readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
+    @Inject(method = "readData", at = @At("TAIL"))
+    private void beaconBlockEntity$readData(ReadView view, CallbackInfo ci) {
         try {
-            this.isEnlightening = nbt.getBoolean("isEnlightening").orElse(false);
-            nbt.get("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC).ifPresent((uuid) -> this.omnipotentOwner = uuid);
-            this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount").orElse(0);
+            this.isEnlightening = view.getBoolean("isEnlightening", false);
+            view.read("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC);
+            this.cachedEnlightenedAmount = view.getInt("cachedEnlightenedAmount", 0);
         }
         catch(Exception ignored){}
     }
 
-    @Inject(method = "writeNbt", at = @At("TAIL"))
-    private void beaconBlockEntity$writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup, CallbackInfo ci) {
+    @Inject(method = "writeData", at = @At("TAIL"))
+    private void beaconBlockEntity$writeData(WriteView view, CallbackInfo ci) {
         try {
-            nbt.putBoolean("isEnlightening", this.isEnlightening);
-            nbt.put("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC, this.omnipotentOwner);
-            nbt.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
+            view.putBoolean("isEnlightening", this.isEnlightening);
+            view.put("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC, this.omnipotentOwner);
+            view.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
         }
         catch(Exception ignored){}
     }

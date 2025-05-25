@@ -77,6 +77,7 @@ public class POConfig {
         // convertUponEnlightened.put("minecraft:witch", "minecraft:villager");
         convertUponEnlightened.put("minecraft:zoglin", "minecraft:hoglin");
         convertUponEnlightened.put("minecraft:zombified_piglin", "minecraft:piglin");
+        convertUponEnlightened.put("minecraft:ghast", "minecraft:happy_ghast");
         convertUponEnlightened.put("illageandspillage:ragno", "minecraft:villager");
         convertUponEnlightened.put("illageandportage:ragno", "minecraft:villager");
     }

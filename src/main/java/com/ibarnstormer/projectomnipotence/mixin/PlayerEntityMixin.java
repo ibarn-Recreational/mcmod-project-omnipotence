@@ -3,7 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
-import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
+import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POEntityConversionHelper;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
@@ -25,7 +25,6 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.MinecraftServer;
@@ -33,6 +32,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -49,9 +50,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.*;
 
 @Mixin(PlayerEntity.class)
-public abstract class PlayerEntityMixin extends EntityMixin {
+public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayerEntity {
 
     @Shadow public abstract boolean isPlayer();
+
+    @Unique
+    boolean isOmnipotent;
+    @Unique
+    int entitiesEnlightened;
 
     @Unique
     private static final Identifier OMNIPOTENT_LUCK = Identifier.of(Main.MODID, "omnipotent_luck");
@@ -64,22 +70,16 @@ public abstract class PlayerEntityMixin extends EntityMixin {
         return (PlayerEntity) (Object) this;
     }
 
-    @Override
-    @Unique
-    public void initServersideDataTracker(ServersideDataTracker.Builder builder) {
-        POUtils.initPlayerData(builder);
-    }
-
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
-    public void playerEntity$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
+    @Inject(method = "readCustomData", at = @At("TAIL"))
+    public void playerEntity$readCustomData(ReadView view, CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        POUtils.readPlayerNbt(player, nbt);
+        POUtils.readPlayerData(player, view);
     }
 
-   @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
-    public void playerEntity$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
+   @Inject(method = "writeCustomData", at = @At("TAIL"))
+    public void playerEntity$writeCustomData(WriteView view, CallbackInfo ci) {
        PlayerEntity player = this.getPlayer();
-        POUtils.writePlayerNbt(player, nbt);
+        POUtils.writePlayerData(player, view);
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
@@ -304,4 +304,25 @@ public abstract class PlayerEntityMixin extends EntityMixin {
             }
         }
     }
+
+    @Override
+    public boolean isOmnipotent() {
+        return this.isOmnipotent;
+    }
+
+    @Override
+    public int getEntitiesEnlightened() {
+        return this.entitiesEnlightened;
+    }
+
+    @Override
+    public void setOmnipotent(boolean b) {
+        this.isOmnipotent = b;
+    }
+
+    @Override
+    public void setEntitiesEnlightened(int i) {
+        this.entitiesEnlightened = i;
+    }
+
 }
