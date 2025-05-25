@@ -91,7 +91,8 @@ public class POUtils {
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
-            ProjectileDeflection.REDIRECTED.deflect(projectile, hitEntity, random);
+            projectile.setVelocity(projectile.getVelocity().multiply(2.0));
+            ProjectileDeflection.SIMPLE.deflect(projectile, hitEntity, random);
         };
 
         finalizers = new HashMap<>();
