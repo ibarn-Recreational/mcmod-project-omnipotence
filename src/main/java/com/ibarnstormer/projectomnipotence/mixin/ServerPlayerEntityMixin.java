@@ -29,8 +29,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         return (ServerPlayerEntity) (Object) this;
     }
 
-    public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
-        super(world, pos, yaw, gameProfile);
+    public ServerPlayerEntityMixin(World world, GameProfile gameProfile) {
+        super(world, gameProfile);
     }
 
     @Inject(method = "copyFrom", at = @At("TAIL"))
