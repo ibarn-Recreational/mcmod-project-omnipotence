@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.KillCommand;
@@ -19,8 +20,8 @@ import java.util.Iterator;
 public class KillCommandMixin {
 
 
-    @Inject(method = "execute", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;kill(Lnet/minecraft/server/world/ServerWorld;)V"), locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true)
-    private static void killCommand$execute(ServerCommandSource source, Collection<? extends Entity> targets, CallbackInfoReturnable<Integer> cir, Iterator var2, Entity entity) {
+    @Inject(method = "execute", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;kill(Lnet/minecraft/server/world/ServerWorld;)V"), cancellable = true)
+    private static void killCommand$execute(ServerCommandSource source, Collection<? extends Entity> targets, CallbackInfoReturnable<Integer> cir, @Local Entity entity) {
         if(entity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && entity.isAlive() && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             cir.cancel();
         }
