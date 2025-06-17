@@ -75,7 +75,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
                     }
                 }
                 if (!POUtils.isInHarmony(thisEntity)) {
-                    POUtils.harmonizeEntity(thisEntity, playerAttacker, source);
+                    POUtils.handleEnlightenment(thisEntity, playerAttacker, source);
                 }
                 cir.setReturnValue(false);
             }

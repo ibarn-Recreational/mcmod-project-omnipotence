@@ -223,6 +223,75 @@ public class POUtils {
         }
     }
 
+    public static void handleEnlightenment(LivingEntity target, PlayerEntity player, @Nullable DamageSource damageSource) {
+        DamageSource source = damageSource;
+        if(source == null) source = player.getDamageSources().playerAttack(player);
+
+        String entityID = Registries.ENTITY_TYPE.getId(target.getType()).toString();
+        if(!isInHarmony(target) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
+            harmonizeEntity(target, player, source);
+        }
+        else if (!isInHarmony(target) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !enlightenedPlayerInCreative(player)) {
+            EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
+            Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
+            if(target instanceof MobEntity mob && e instanceof MobEntity && player.getWorld() instanceof ServerWorld serverWorld) {
+                mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
+                handleCustomDrops(mob, player, serverWorld);
+                forceDropEquipment(mob, serverWorld, (stack) -> {
+                    ItemStack copy = stack.copy();
+                    mob.dropStack(serverWorld, copy);
+                });
+
+                POEntityConversionHelper helper = getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
+                if(helper != null) e = helper.convertEntity(mob);
+                else {
+                    EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
+                    e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                }
+            }
+            else if(e != null) {
+                player.getWorld().spawnEntity(e);
+                harmonizeEntity(target, player, source);
+                target.setSilent(true);
+                target.remove(Entity.RemovalReason.DISCARDED);
+                target.getWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.PLAYERS, 1, 2);
+            }
+
+            if(e instanceof LivingEntity tle) harmonizeEntity(tle, player, source);
+        }
+        else if(!isInHarmony(target)) {
+            harmonizeEntity(target, player, source);
+        }
+    }
+
+    private static void handleCustomDrops(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, ServerWorld serverWorld) {
+        if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
+            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
+        }
+
+        if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
+            if(chance == 0) {
+                ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
+
+                // Should always work but catch just in case something goes wrong
+                try {
+                    GoatEntity goat = (GoatEntity) livingEntity;
+                    goatHorn = goat.getGoatHornStack();
+                }
+                catch (Exception ignored) {}
+
+                livingEntity.dropStack(serverWorld, goatHorn);
+            }
+        }
+
+        if(livingEntity.getType() == EntityType.GHAST && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 5 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK)));
+            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(Items.MUSIC_DISC_TEARS));
+        }
+    }
+
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
         if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
 
@@ -236,36 +305,12 @@ public class POUtils {
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
 
+            handleCustomDrops(livingEntity, playerAttacker, serverWorld);
+
             forceDropEquipment(livingEntity, serverWorld, livingEntity instanceof MobEntity mob ? (stack) -> {
                 ItemStack copy = stack.copy();
                 mob.dropStack(serverWorld, copy);
             } : (stack) -> {});
-
-            if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
-                if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
-            }
-
-            if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
-                if(chance == 0) {
-                    ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
-
-                    // Should always work but catch just in case something goes wrong
-                    try {
-                        GoatEntity goat = (GoatEntity) livingEntity;
-                        goatHorn = goat.getGoatHornStack();
-                    }
-                    catch (Exception ignored) {}
-
-                    livingEntity.dropStack(serverWorld, goatHorn);
-                }
-            }
-
-            if(livingEntity.getType() == EntityType.GHAST && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 3 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK)));
-                if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(Items.MUSIC_DISC_TEARS));
-            }
 
             livingEntity.setAttacking((PlayerEntity) null, 0);
             if(livingEntity instanceof MobEntity mob) {

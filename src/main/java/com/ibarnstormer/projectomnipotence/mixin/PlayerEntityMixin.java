@@ -120,57 +120,20 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
     @Inject(method = "attack", at = @At("HEAD"))
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        if(POUtils.isOmnipotent(player) && player.getWorld() instanceof ServerWorld serverWorld) {
+        if(POUtils.isOmnipotent(player)) {
             float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
 
             if(f > 0) {
                 list = player.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
-                for(LivingEntity entity : list) {
-                    if(entity != target) entity.damage(serverWorld, entity.getDamageSources().playerAttack(player), 0.0F);
-                }
-
                 player.spawnSweepAttackParticles();
             }
             else if (target instanceof LivingEntity le) list = List.of(le);
             else list = new ArrayList<>();
 
-            // If we want to simply remove stubborn entities
             for(LivingEntity le : list) {
-                String entityID = Registries.ENTITY_TYPE.getId(le.getType()).toString();
-                if(!POUtils.isInHarmony(le) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
-                    POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
-                }
-                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !POUtils.enlightenedPlayerInCreative(player)) {
-                    EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
-                    if(conversionType != null) {
-                        Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
-                        if(le instanceof MobEntity mob && e instanceof MobEntity) {
-                            mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            POUtils.forceDropEquipment(mob, serverWorld, (stack) -> {
-                                ItemStack copy = stack.copy();
-                                mob.dropStack(serverWorld, copy);
-                            });
-
-                            POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
-                            if(helper != null) e = helper.convertEntity(mob);
-                            else {
-                                EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                                e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
-                            }
-                        }
-                        else if(e != null) {
-                            player.getWorld().spawnEntity(e);
-                            POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
-                            le.setSilent(true);
-                            le.remove(Entity.RemovalReason.DISCARDED);
-                            le.getWorld().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
-                        }
-
-                        if(e instanceof LivingEntity tle) POUtils.harmonizeEntity(tle, player, player.getDamageSources().playerAttack(player));
-                    }
-                }
+                POUtils.handleEnlightenment(le, player, null);
             }
         }
     }
