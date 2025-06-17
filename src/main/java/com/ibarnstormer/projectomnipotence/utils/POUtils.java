@@ -3,8 +3,8 @@ package com.ibarnstormer.projectomnipotence.utils;
 import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
-import com.ibarnstormer.projectomnipotence.entity.ServerTrackedData;
-import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
+import com.ibarnstormer.projectomnipotence.entity.IHarmonicEntity;
+import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.*;
@@ -20,14 +20,10 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.conversion.EntityConversionContext;
 import net.minecraft.entity.conversion.EntityConversionType;
 import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.mob.ZombieVillagerEntity;
-import net.minecraft.entity.mob.ZombifiedPiglinEntity;
+import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.GoatEntity;
+import net.minecraft.entity.passive.HappyGhastEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
@@ -35,7 +31,6 @@ import net.minecraft.loot.LootTable;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.loot.context.LootWorldContext;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
@@ -45,6 +40,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -65,12 +62,7 @@ import java.util.function.Consumer;
 
 public class POUtils {
 
-    private static final PlayerTrackedData playerData = new PlayerTrackedData();
-
-    // Create a tracked data instance for each respective class so that the ids of other data don't clash
-    private static final HashMap<Class<? extends LivingEntity>, TrackedData<Boolean>> livingEntityDataSet = new HashMap<>();
     private static final HashMap<EntityType<? extends MobEntity>, POEntityConversionHelper<? extends MobEntity, ? extends MobEntity>> finalizers;
-
     private static final ImmutableSet<POPlayerConfig> permaEnlightened;
 
     private static final Item[] discs = {
@@ -166,63 +158,26 @@ public class POUtils {
         return finalizers.get(type);
     }
 
-    public static void initPlayerData(ServersideDataTracker.Builder builder) {
-        builder.add(playerData.IS_OMNIPOTENT(), false);
-        builder.add(playerData.ENTITIES_ENLIGHTENED(), 0);
+    public static void readPlayerData(PlayerEntity player, ReadView view) {
+        ((IPOPlayerEntity) player).setOmnipotent(view.getBoolean("isOmnipotent", false));
+        ((IPOPlayerEntity) player).setEntitiesEnlightened(view.getInt("EntitiesEnlightened", 0));
     }
 
-    public static void readPlayerNbt(PlayerEntity player, NbtCompound nbt) {
-        try {
-            ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), nbt.getBoolean("isOmnipotent").orElse(false));
-            ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), nbt.getInt("EntitiesEnlightened").orElse(0));
-        }
-        catch(Exception ignored) {
-        }
+    public static void writePlayerData(PlayerEntity player, WriteView view) {
+        view.putBoolean("isOmnipotent", ((IPOPlayerEntity) player).isOmnipotent());
+        view.putInt("EntitiesEnlightened", ((IPOPlayerEntity) player).getEntitiesEnlightened());
     }
 
-    public static void writePlayerNbt(PlayerEntity player, NbtCompound nbt) {
-        try {
-            boolean isOmnipotent = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.IS_OMNIPOTENT());
-            int entitiesEnlightened = ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
-            nbt.putBoolean("isOmnipotent", isOmnipotent);
-            nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
-        }
-        catch(Exception ignored) {
-        }
+    public static void readNonPlayerData(LivingEntity entity, ReadView view) {
+        ((IHarmonicEntity) entity).setInHarmony(view.getBoolean("inHarmony", false));
     }
 
-    private static TrackedData<Boolean> assignedEntityData(LivingEntity entity) {
-        TrackedData<Boolean> inHarmony = ServersideDataTracker.registerData(entity.getClass(), TrackedDataHandlerRegistry.BOOLEAN);
-        if(!livingEntityDataSet.containsKey(entity.getClass())) livingEntityDataSet.put(entity.getClass(), inHarmony);
-        return inHarmony;
-    }
-    
-    public static void initNonPlayerData(LivingEntity entity, ServersideDataTracker.Builder builder) {
-        TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-        if(inHarmony == null) inHarmony = assignedEntityData(entity);
-        builder.add(inHarmony, false);
-    }
-
-    public static void readNonPlayerData(LivingEntity entity, NbtCompound nbt) {
-        try {
-            TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-            ((ServerTrackedData) entity).getServersideDataTracker().set(inHarmony, nbt.getBoolean("inHarmony").orElse(false));
-        }
-        catch(Exception ignored) {
-        }
-    }
-
-    public static void writeNonPlayerData(LivingEntity entity, NbtCompound nbt) {
-        try {
-            TrackedData<Boolean> inHarmony = livingEntityDataSet.get(entity.getClass());
-            nbt.putBoolean("inHarmony", ((ServerTrackedData) entity).getServersideDataTracker().get(inHarmony));
-        }
-        catch(Exception ignored) {
-        }
+    public static void writeNonPlayerData(LivingEntity entity, WriteView view) {
+        view.putBoolean("inHarmony", ((IHarmonicEntity) entity).isInHarmony());
     }
 
     public static void grantOmnipotence(PlayerEntity player, boolean isCopyFrom) {
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), true);
+        ((IPOPlayerEntity) player).setOmnipotent(true);
         if(player.getWorld() instanceof ServerWorld serverWorld && !isCopyFrom) {
             player.sendMessage(Text.translatable("message.projectomnipotence.ascend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
             serverWorld.spawnParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getLengthY() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
@@ -234,7 +189,7 @@ public class POUtils {
     }
 
     public static void revokeOmnipotence(PlayerEntity player) {
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.IS_OMNIPOTENT(), false);
+        ((IPOPlayerEntity) player).setOmnipotent(false);
         if(!player.getWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
         if(Main.CONFIG.omnipotentPlayersGlow && player.hasStatusEffect(StatusEffects.GLOWING)) player.removeStatusEffect(StatusEffects.GLOWING);
         boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
@@ -251,32 +206,89 @@ public class POUtils {
     }
 
     public static boolean isOmnipotent(PlayerEntity player) {
-        return ((ServerTrackedData) player).getServersideDataTracker().get(playerData.IS_OMNIPOTENT());
-    }
-
-    public static boolean isOmnipotentClient(PlayerEntity player) {
-        NbtCompound nbt = new NbtCompound();
-        player.writeNbt(nbt);
-        return nbt.getBoolean("isOmnipotent").orElse(false);
+        return ((IPOPlayerEntity) player).isOmnipotent();
     }
 
     public static int getEntitiesEnlightened(PlayerEntity player) {
-        return ((ServerTrackedData) player).getServersideDataTracker().get(playerData.ENTITIES_ENLIGHTENED());
-    }
-
-    public static int getEntitiesEnlightenedClient(PlayerEntity player) {
-        NbtCompound nbt = new NbtCompound();
-        player.writeNbt(nbt);
-        return nbt.getInt("EntitiesEnlightened").orElse(0);
+        return ((IPOPlayerEntity) player).getEntitiesEnlightened();
     }
 
     public static void setEntitiesEnlightened(PlayerEntity player, int value) {
-        ((ServerTrackedData) player).getServersideDataTracker().set(playerData.ENTITIES_ENLIGHTENED(), value);
+        ((IPOPlayerEntity) player).setEntitiesEnlightened(value);
         boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) < Main.CONFIG.flightEntityGoal && inSurvival) {
             player.getAbilities().allowFlying = false;
             player.getAbilities().flying = false;
             player.sendAbilitiesUpdate();
+        }
+    }
+
+    public static void handleEnlightenment(LivingEntity target, PlayerEntity player, @Nullable DamageSource damageSource) {
+        DamageSource source = damageSource;
+        if(source == null) source = player.getDamageSources().playerAttack(player);
+
+        String entityID = Registries.ENTITY_TYPE.getId(target.getType()).toString();
+        if(!isInHarmony(target) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
+            harmonizeEntity(target, player, source);
+        }
+        else if (!isInHarmony(target) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !enlightenedPlayerInCreative(player)) {
+            EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
+            Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
+            if(target instanceof MobEntity mob && e instanceof MobEntity && player.getWorld() instanceof ServerWorld serverWorld) {
+                mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
+                handleCustomDrops(mob, player, serverWorld);
+                forceDropEquipment(mob, serverWorld, (stack) -> {
+                    ItemStack copy = stack.copy();
+                    mob.dropStack(serverWorld, copy);
+                });
+
+                POEntityConversionHelper helper = getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
+                if(helper != null) e = helper.convertEntity(mob);
+                else {
+                    EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
+                    e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
+                }
+            }
+            else if(e != null) {
+                player.getWorld().spawnEntity(e);
+                harmonizeEntity(target, player, source);
+                target.setSilent(true);
+                target.remove(Entity.RemovalReason.DISCARDED);
+                target.getWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.PLAYERS, 1, 2);
+            }
+
+            if(e instanceof LivingEntity tle) harmonizeEntity(tle, player, source);
+        }
+        else if(!isInHarmony(target)) {
+            harmonizeEntity(target, player, source);
+        }
+    }
+
+    private static void handleCustomDrops(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, ServerWorld serverWorld) {
+        if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
+            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
+        }
+
+        if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
+            if(chance == 0) {
+                ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
+
+                // Should always work but catch just in case something goes wrong
+                try {
+                    GoatEntity goat = (GoatEntity) livingEntity;
+                    goatHorn = goat.getGoatHornStack();
+                }
+                catch (Exception ignored) {}
+
+                livingEntity.dropStack(serverWorld, goatHorn);
+            }
+        }
+
+        if(livingEntity.getType() == EntityType.GHAST && playerAttacker != null) {
+            int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 5 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK)));
+            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(Items.MUSIC_DISC_TEARS));
         }
     }
 
@@ -293,31 +305,12 @@ public class POUtils {
             livingEntity.dropExperience(serverWorld, playerAttacker);
             livingEntity.dropLoot(serverWorld, source, true);
 
+            handleCustomDrops(livingEntity, playerAttacker, serverWorld);
+
             forceDropEquipment(livingEntity, serverWorld, livingEntity instanceof MobEntity mob ? (stack) -> {
                 ItemStack copy = stack.copy();
                 mob.dropStack(serverWorld, copy);
             } : (stack) -> {});
-
-            if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
-                if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
-            }
-
-            if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
-                int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
-                if(chance == 0) {
-                    ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
-
-                    // Should always work but catch just in case something goes wrong
-                    try {
-                        GoatEntity goat = (GoatEntity) livingEntity;
-                        goatHorn = goat.getGoatHornStack();
-                    }
-                    catch (Exception ignored) {}
-
-                    livingEntity.dropStack(serverWorld, goatHorn);
-                }
-            }
 
             livingEntity.setAttacking((PlayerEntity) null, 0);
             if(livingEntity instanceof MobEntity mob) {
@@ -412,27 +405,14 @@ public class POUtils {
     public static boolean isInHarmony(Entity entity) {
         if(entity instanceof PlayerEntity player) return isOmnipotent(player);
         else if(entity instanceof LivingEntity) {
-            try {
-                return ((ServerTrackedData) entity).getServersideDataTracker().get(livingEntityDataSet.get(entity.getClass()));
-            }
-            catch (Exception e) {
-                // If for some reason the tracked data is not initialized for the entity
-                e.printStackTrace();
-                return false;
-            }
+            return ((IHarmonicEntity) entity).isInHarmony();
         }
         else return false;
     }
 
     public static void setInHarmony(LivingEntity entity, boolean value) {
         if(entity.getType() != EntityType.PLAYER) {
-            try {
-                ((ServerTrackedData) entity).getServersideDataTracker().set(livingEntityDataSet.get(entity.getClass()), value);
-            }
-            catch (Exception e) {
-                // If for some reason the tracked data is not initialized for the entity
-                e.printStackTrace();
-            }
+            ((IHarmonicEntity) entity).setInHarmony(value);
         }
     }
 
@@ -542,7 +522,7 @@ public class POUtils {
             MinecraftServer server = player.getServer();
 
             if (server != null) {
-                ServerWorld world = player.getServerWorld();
+                ServerWorld world = player.getWorld();
 
                 if (world != null) {
 
@@ -648,7 +628,7 @@ public class POUtils {
         });
 
         int i = 0;
-        while ((!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() && !world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir()) || i > Short.MAX_VALUE) {
+        while ((!world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up()).isAir() && !world.getBlockState(BlockPos.ofFloored(vec3d1.get()).up().up()).isAir()) || i > Short.MAX_VALUE) {
             vec3d1.set(vec3d1.get().add(0, 1, 0));
             i++;
         }

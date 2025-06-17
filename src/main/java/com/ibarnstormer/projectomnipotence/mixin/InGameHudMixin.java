@@ -16,7 +16,7 @@ public class InGameHudMixin {
     @Inject(method = "renderHealthBar", at = @At("HEAD"), cancellable = true)
     private void inGameHud$renderHealthBar(DrawContext context, PlayerEntity player, int x, int y, int lines, int regeneratingHeartIndex, float maxHealth, int lastHealth, int health, int absorption, boolean blinking, CallbackInfo ci) {
         // Note, configs aren't necessarily synced between server and client, maybe add a packet that broadcasts the server config in the future
-        if(POUtils.isOmnipotentClient(player) && POUtils.getEntitiesEnlightenedClient(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+        if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             ci.cancel();
         }
     }

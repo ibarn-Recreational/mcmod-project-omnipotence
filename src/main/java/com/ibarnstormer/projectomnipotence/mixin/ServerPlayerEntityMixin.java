@@ -29,8 +29,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
         return (ServerPlayerEntity) (Object) this;
     }
 
-    public ServerPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
-        super(world, pos, yaw, gameProfile);
+    public ServerPlayerEntityMixin(World world, GameProfile gameProfile) {
+        super(world, gameProfile);
     }
 
     @Inject(method = "copyFrom", at = @At("TAIL"))
@@ -51,7 +51,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
                         Criteria.SLEPT_IN_BED.trigger(player);
                     }));
 
-                    if (!player.getServerWorld().isSleepingEnabled()) {
+                    if (!player.getWorld().isSleepingEnabled()) {
                         player.sendMessage(Text.translatable("sleep.not_possible"), true);
                     }
 

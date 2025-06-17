@@ -3,7 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.google.common.collect.Maps;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
-import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
+import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import com.ibarnstormer.projectomnipotence.utils.POEntityConversionHelper;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
@@ -25,7 +25,6 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.MinecraftServer;
@@ -33,6 +32,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -49,9 +50,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.*;
 
 @Mixin(PlayerEntity.class)
-public abstract class PlayerEntityMixin extends EntityMixin {
+public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayerEntity {
 
     @Shadow public abstract boolean isPlayer();
+
+    @Unique
+    boolean isOmnipotent;
+    @Unique
+    int entitiesEnlightened;
 
     @Unique
     private static final Identifier OMNIPOTENT_LUCK = Identifier.of(Main.MODID, "omnipotent_luck");
@@ -64,22 +70,16 @@ public abstract class PlayerEntityMixin extends EntityMixin {
         return (PlayerEntity) (Object) this;
     }
 
-    @Override
-    @Unique
-    public void initServersideDataTracker(ServersideDataTracker.Builder builder) {
-        POUtils.initPlayerData(builder);
-    }
-
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
-    public void playerEntity$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
+    @Inject(method = "readCustomData", at = @At("TAIL"))
+    public void playerEntity$readCustomData(ReadView view, CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        POUtils.readPlayerNbt(player, nbt);
+        POUtils.readPlayerData(player, view);
     }
 
-   @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
-    public void playerEntity$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
+   @Inject(method = "writeCustomData", at = @At("TAIL"))
+    public void playerEntity$writeCustomData(WriteView view, CallbackInfo ci) {
        PlayerEntity player = this.getPlayer();
-        POUtils.writePlayerNbt(player, nbt);
+        POUtils.writePlayerData(player, view);
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
@@ -120,57 +120,20 @@ public abstract class PlayerEntityMixin extends EntityMixin {
     @Inject(method = "attack", at = @At("HEAD"))
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        if(POUtils.isOmnipotent(player) && player.getWorld() instanceof ServerWorld serverWorld) {
+        if(POUtils.isOmnipotent(player)) {
             float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
 
             if(f > 0) {
                 list = player.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
-                for(LivingEntity entity : list) {
-                    if(entity != target) entity.damage(serverWorld, entity.getDamageSources().playerAttack(player), 0.0F);
-                }
-
                 player.spawnSweepAttackParticles();
             }
             else if (target instanceof LivingEntity le) list = List.of(le);
             else list = new ArrayList<>();
 
-            // If we want to simply remove stubborn entities
             for(LivingEntity le : list) {
-                String entityID = Registries.ENTITY_TYPE.getId(le.getType()).toString();
-                if(!POUtils.isInHarmony(le) && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
-                    POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
-                }
-                else if (!POUtils.isInHarmony(le) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !POUtils.enlightenedPlayerInCreative(player)) {
-                    EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
-                    if(conversionType != null) {
-                        Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
-                        if(le instanceof MobEntity mob && e instanceof MobEntity) {
-                            mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
-                            POUtils.forceDropEquipment(mob, serverWorld, (stack) -> {
-                                ItemStack copy = stack.copy();
-                                mob.dropStack(serverWorld, copy);
-                            });
-
-                            POEntityConversionHelper helper = POUtils.getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
-                            if(helper != null) e = helper.convertEntity(mob);
-                            else {
-                                EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
-                                e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
-                            }
-                        }
-                        else if(e != null) {
-                            player.getWorld().spawnEntity(e);
-                            POUtils.harmonizeEntity(le, player, player.getDamageSources().playerAttack(player));
-                            le.setSilent(true);
-                            le.remove(Entity.RemovalReason.DISCARDED);
-                            le.getWorld().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
-                        }
-
-                        if(e instanceof LivingEntity tle) POUtils.harmonizeEntity(tle, player, player.getDamageSources().playerAttack(player));
-                    }
-                }
+                POUtils.handleEnlightenment(le, player, null);
             }
         }
     }
@@ -304,4 +267,25 @@ public abstract class PlayerEntityMixin extends EntityMixin {
             }
         }
     }
+
+    @Override
+    public boolean isOmnipotent() {
+        return this.isOmnipotent;
+    }
+
+    @Override
+    public int getEntitiesEnlightened() {
+        return this.entitiesEnlightened;
+    }
+
+    @Override
+    public void setOmnipotent(boolean b) {
+        this.isOmnipotent = b;
+    }
+
+    @Override
+    public void setEntitiesEnlightened(int i) {
+        this.entitiesEnlightened = i;
+    }
+
 }

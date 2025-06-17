@@ -1,22 +1,22 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.Main;
-import com.ibarnstormer.projectomnipotence.entity.data.ServersideDataTracker;
+import com.ibarnstormer.projectomnipotence.entity.IHarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,35 +25,29 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
-public abstract class LivingEntityMixin extends EntityMixin {
+public abstract class LivingEntityMixin extends EntityMixin implements IHarmonicEntity {
+
+    @Unique
+    boolean inHarmony;
 
     @Unique
     private LivingEntity getLivingEntity() {
         return (LivingEntity) (Object) this;
     }
 
-    @Override
-    @Unique
-    public void initServersideDataTracker(ServersideDataTracker.Builder builder) {
+    @Inject(method = "readCustomData", at = @At("TAIL"))
+    public void livingEntity$readCustomData(ReadView view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
-            POUtils.initNonPlayerData(thisEntity, builder);
+            POUtils.readNonPlayerData(thisEntity, view);
         }
     }
 
-    @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
-    public void livingEntity$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
+    @Inject(method = "writeCustomData", at = @At("TAIL"))
+    public void livingEntity$writeCustomData(WriteView view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
-            POUtils.readNonPlayerData(thisEntity, nbt);
-        }
-    }
-
-    @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
-    public void livingEntity$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity.getType() != EntityType.PLAYER) {
-            POUtils.writeNonPlayerData(thisEntity, nbt);
+            POUtils.writeNonPlayerData(thisEntity, view);
         }
     }
 
@@ -81,7 +75,7 @@ public abstract class LivingEntityMixin extends EntityMixin {
                     }
                 }
                 if (!POUtils.isInHarmony(thisEntity)) {
-                    POUtils.harmonizeEntity(thisEntity, playerAttacker, source);
+                    POUtils.handleEnlightenment(thisEntity, playerAttacker, source);
                 }
                 cir.setReturnValue(false);
             }
@@ -140,5 +134,15 @@ public abstract class LivingEntityMixin extends EntityMixin {
         if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && effect.getEffectType().value().getCategory() == StatusEffectCategory.HARMFUL) {
             cir.setReturnValue(false);
         }
+    }
+
+    @Override
+    public boolean isInHarmony() {
+        return this.inHarmony;
+    }
+
+    @Override
+    public void setInHarmony(boolean b) {
+        this.inHarmony = b;
     }
 }

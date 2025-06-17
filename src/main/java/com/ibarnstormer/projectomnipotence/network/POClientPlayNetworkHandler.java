@@ -1,11 +1,10 @@
 package com.ibarnstormer.projectomnipotence.network;
 
+import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
-import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.nbt.NbtCompound;
 
 public class POClientPlayNetworkHandler {
 
@@ -18,12 +17,9 @@ public class POClientPlayNetworkHandler {
             int entitiesEnlightened = payload.entitiesEnlightened();
 
             if(player.getUuid().equals(profile.getId())) {
-                NbtCompound nbt = new NbtCompound();
 
-                nbt.putBoolean("isOmnipotent", isOmnipotent);
-                nbt.putInt("EntitiesEnlightened", entitiesEnlightened);
-
-                POUtils.readPlayerNbt(player, nbt);
+                ((IPOPlayerEntity) player).setOmnipotent(isOmnipotent);
+                ((IPOPlayerEntity) player).setEntitiesEnlightened(entitiesEnlightened);
             }
 
         }

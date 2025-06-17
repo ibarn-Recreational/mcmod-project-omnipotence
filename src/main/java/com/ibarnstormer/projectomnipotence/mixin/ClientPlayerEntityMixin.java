@@ -27,7 +27,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
     @Inject(method = "tick", at = @At("HEAD"))
     public void clientPlayerEntity$tick(CallbackInfo ci) {
         ClientPlayerEntity player = this.getClientPlayer();
-        if (player.age % 5 == 0 && POUtils.isOmnipotentClient(player) && Main.CONFIG.omnipotentPlayerRenderParticlesClient && !Main.CONFIG.omnipotentPlayerParticlesLocal) {
+        if (player.age % 5 == 0 && POUtils.isOmnipotent(player) && Main.CONFIG.omnipotentPlayerRenderParticlesClient && !Main.CONFIG.omnipotentPlayerParticlesLocal) {
             POUtils.spawnEnlightenmentParticlesClient(player, clientWorld);
         }
     }
