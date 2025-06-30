@@ -120,7 +120,7 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
     @Inject(method = "attack", at = @At("HEAD"))
     public void playerEntity$attack(Entity target, CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        if(POUtils.isOmnipotent(player)) {
+        if(POUtils.isOmnipotent(player) && !POUtils.enlightenedPlayerInCreative(player)) {
             float f = (float) player.getAttributeValue(EntityAttributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
