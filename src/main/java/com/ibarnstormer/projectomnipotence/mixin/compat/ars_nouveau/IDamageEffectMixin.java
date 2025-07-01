@@ -22,7 +22,7 @@ public interface IDamageEffectMixin {
     @Inject(method = "attemptDamage", at = @At("RETURN"))
     default void iDamageEffect$attemptDamage(Level world, LivingEntity shooter, SpellStats stats, SpellContext spellContext, SpellResolver resolver, Entity entity, DamageSource source, float baseDamage, CallbackInfoReturnable<Boolean> cir) {
         if(!cir.getReturnValue() && entity instanceof HarmonicEntity harmonic && entity instanceof LivingEntity living && !harmonic.getHarmonicState() && shooter instanceof Player player && !(entity instanceof Player)) {
-            POUtils.harmonizeEntity(living, world, player, source);
+            POUtils.handleEnlightenment(living, player, source);
         }
     }
 

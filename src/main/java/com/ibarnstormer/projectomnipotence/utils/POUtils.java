@@ -197,6 +197,37 @@ public class POUtils {
         }
     }
 
+    public static void handleEnlightenment(LivingEntity le, Player player, @Nullable DamageSource damageSource) {
+        DamageSource source = damageSource;
+        if(source == null) source = player.damageSources().playerAttack(player);
+
+        String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(le.getType())).toString();
+        if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
+            POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
+        }
+        else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !POUtils.enlightenedPlayerInCreative(player)) {
+            EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.tryParse(Main.CONFIG.convertUponEnlightened.get(entityID)));
+            if(conversionType != null) {
+                Entity e = conversionType.create(player.level());
+
+                if(le instanceof Mob mob && e instanceof Mob) {
+                    POUtils.harmonizeEntity(le, player.level(), player, source);
+                    EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
+                    e = mob.convertTo(tMobType, true);
+                }
+                else if(e != null) {
+                    player.level().addFreshEntity(e);
+                    POUtils.harmonizeEntity(le, player.level(), player, source);
+                    le.setSilent(true);
+                    le.remove(Entity.RemovalReason.DISCARDED);
+                    le.level().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
+                }
+
+                if(e instanceof LivingEntity tle) POUtils.harmonizeEntity(tle, player.level(), player, source);
+            }
+        }
+    }
+
     public static void harmonizeEntity(LivingEntity thisEntity, Level level, @Nullable Player playerAttacker, DamageSource p_21016_) {
         if(thisEntity instanceof HarmonicEntity harmonicEntity && !Main.CONFIG.enlightenmentBlackList.contains(Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(thisEntity.getType())).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*") && !level.isClientSide()) {
 

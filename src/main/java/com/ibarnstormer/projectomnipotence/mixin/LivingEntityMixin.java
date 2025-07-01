@@ -86,7 +86,7 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
                 if(!level().isClientSide) {
                     HarmonicEntity harmonicEntity = (HarmonicEntity) thisEntity;
                     if (!harmonicEntity.getHarmonicState()) {
-                        POUtils.harmonizeEntity(thisEntity, level(), playerAttacker, p_21016_);
+                        POUtils.handleEnlightenment(thisEntity, playerAttacker, p_21016_);
                     }
                 }
                 cir.setReturnValue(false);

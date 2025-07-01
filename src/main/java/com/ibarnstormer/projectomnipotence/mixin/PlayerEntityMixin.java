@@ -186,16 +186,13 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Inject(method = "attack", at = @At("HEAD"))
     public void onAttack(Entity p_36347_, CallbackInfo ci) {
         Player player = this.getPlayer();
-        if(POUtils.isOmnipotent(player) && !player.level().isClientSide) {
+        if(POUtils.isOmnipotent(player) && !player.level().isClientSide && !POUtils.enlightenedPlayerInCreative(player)) {
             float f = (float) player.getAttributeValue(Attributes.SWEEPING_DAMAGE_RATIO);
 
             List<LivingEntity> list;
 
             if(f > 0) {
                 list = player.level().getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0D, 0.25D, 1.0D));
-                for(LivingEntity entity : list) {
-                    if(entity != p_36347_ && entity != player && entity instanceof HarmonicEntity harmonicEntity && !harmonicEntity.getHarmonicState()) POUtils.harmonizeEntity(entity, player.level(), player, entity.damageSources().playerAttack(player));
-                }
                 player.sweepAttack();
             }
             else if(p_36347_ instanceof LivingEntity le) list = List.of(le);
@@ -203,38 +200,14 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
             // If we want to simply remove stubborn entities
             for(LivingEntity le : list) {
-                String entityID = Objects.requireNonNull(BuiltInRegistries.ENTITY_TYPE.getKey(le.getType())).toString();
-                if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
-                    POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
-                }
-                else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !POUtils.enlightenedPlayerInCreative(player)) {
-                    EntityType<?> conversionType = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.tryParse(Main.CONFIG.convertUponEnlightened.get(entityID)));
-                    if(conversionType != null) {
-                        Entity e = conversionType.create(player.level());
-
-                        if(le instanceof Mob mob && e instanceof Mob) {
-                            POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
-                            EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
-                            e = mob.convertTo(tMobType, true);
-                        }
-                        else if(e != null) {
-                            player.level().addFreshEntity(e);
-                            POUtils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player));
-                            le.setSilent(true);
-                            le.remove(RemovalReason.DISCARDED);
-                            le.level().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
-                        }
-
-                        if(e instanceof LivingEntity tle) POUtils.harmonizeEntity(tle, player.level(), player, player.damageSources().playerAttack(player));
-                    }
-                }
+                POUtils.handleEnlightenment(le, player, null);
             }
         }
     }
 
     @Inject(method = "die", at = @At("HEAD"), cancellable = true)
     public void playerEntity$die(DamageSource cause, CallbackInfo ci) {
-        Player player = ((Player) (Object) this);
+        Player player = this.getPlayer();
         if(POUtils.isOmnipotent(player) && POUtils.getEnlightenedEntities(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             ci.cancel();
         }
