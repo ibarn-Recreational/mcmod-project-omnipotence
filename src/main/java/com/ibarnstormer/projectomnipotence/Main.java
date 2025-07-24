@@ -38,7 +38,7 @@ public class Main
     public static final String MODID = "projectomnipotence";
     public static POConfig CONFIG = POConfig.initConfig();
     private static final Logger LOGGER = LogUtils.getLogger();
-    public static final int CONFIG_VERSION = 5;
+    public static final int CONFIG_VERSION = 6;
 
     public Main(IEventBus modEventBus, ModContainer modContainer)
     {
@@ -124,7 +124,7 @@ public class Main
                 POPlayerConfig config = POUtils.getConfigForPlayer(player);
                 if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
 
-                if (cannotLoseEnlightenment) {
+                if (!cannotLoseEnlightenment) {
                     POUtils.setOmnipotent(false, player.level(), player, true);
                     context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                 }
