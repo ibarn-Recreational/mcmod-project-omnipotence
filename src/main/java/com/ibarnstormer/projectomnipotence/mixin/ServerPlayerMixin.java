@@ -8,11 +8,13 @@ import com.mojang.datafixers.util.Either;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.Unit;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.ProfilePublicKey;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,14 +22,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerMixin extends Player {
 
-    public ServerPlayerMixin(Level p_250508_, BlockPos p_250289_, float p_251702_, GameProfile p_252153_) {
-        super(p_250508_, p_250289_, p_251702_, p_252153_);
+    public ServerPlayerMixin(MinecraftServer p_215088_, ServerLevel p_215089_, GameProfile p_215090_, @Nullable ProfilePublicKey p_215091_) {
+        super(p_215089_, p_215089_.getSharedSpawnPos(), p_215089_.getSharedSpawnAngle(), p_215090_, p_215091_);
     }
 
     @Unique
@@ -47,11 +50,11 @@ public abstract class ServerPlayerMixin extends Player {
                             CriteriaTriggers.SLEPT_IN_BED.trigger(player);
                         }));
 
-                        if (!player.serverLevel().canSleepThroughNights()) {
+                        if (!player.getLevel().canSleepThroughNights()) {
                             player.displayClientMessage(Component.translatable("sleep.not_possible"), true);
                         }
 
-                        if (player.level() instanceof ServerLevel server) server.updateSleepingPlayerList();
+                        if (player.level instanceof ServerLevel server) server.updateSleepingPlayerList();
                     }
                 });
             }

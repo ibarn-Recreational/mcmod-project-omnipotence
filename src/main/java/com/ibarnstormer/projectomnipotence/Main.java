@@ -6,7 +6,6 @@ import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
 import com.ibarnstormer.projectomnipotence.event.ModEvents;
 import com.ibarnstormer.projectomnipotence.network.ModNetwork;
-import com.ibarnstormer.projectomnipotence.registry.ModCreativeTab;
 import com.ibarnstormer.projectomnipotence.utils.Utils;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -18,6 +17,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -42,7 +42,6 @@ public class Main
     public Main()
     {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        ModCreativeTab.init(modEventBus);
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::setup);
         MinecraftForge.EVENT_BUS.register(this);
@@ -100,7 +99,7 @@ public class Main
 
     private int checkEntitiesEnlightened(CommandContext<CommandSourceStack> context) {
         Objects.requireNonNull(context.getSource().getPlayer()).getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            context.getSource().sendSuccess(() -> Component.literal("§eYou've enlightened " + cap.getEnlightenedEntities() + " entities."), false);
+            context.getSource().sendSuccess(Component.literal("§eYou've enlightened " + cap.getEnlightenedEntities() + " entities."), false);
         });
         return 1;
     }
@@ -116,20 +115,20 @@ public class Main
                     if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
 
                     if (cannotLoseEnlightenment) {
-                        cap.setOmnipotent(false, player.level(), player, true);
-                        context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
+                        cap.setOmnipotent(false, player.level, player, true);
+                        context.getSource().sendSuccess(Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                     }
-                    else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + "'s omnipotence cannot be removed"), false);
+                    else context.getSource().sendSuccess(Component.literal(player.getScoreboardName() + "'s omnipotence cannot be removed"), false);
                 }
-                else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already not an omnipotent."), false);
+                else context.getSource().sendSuccess(Component.literal(player.getScoreboardName() + " is already not an omnipotent."), false);
             });
         }
         else if(target instanceof HarmonicEntity harmonicEntity) {
             if(harmonicEntity.getHarmonicState()) {
                 harmonicEntity.setHarmonicState(false);
-                context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " is no longer enlightened."), true);
+                context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " is no longer enlightened."), true);
             }
-            else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " is already not enlightened."), false);
+            else context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " is already not enlightened."), false);
         }
         return 1;
     }
@@ -137,7 +136,7 @@ public class Main
     private int outputEntitiesEnlightened(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Player target = EntityArgument.getPlayer(context, "target");
         target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " enlightened " + cap.getEnlightenedEntities() + " entities."), false);
+            context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " enlightened " + cap.getEnlightenedEntities() + " entities."), false);
         });
         return 1;
     }
@@ -147,7 +146,7 @@ public class Main
         int amount = IntegerArgumentType.getInteger(context, "amount");
         target.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
             cap.setEnlightenedEntities(amount);
-            context.getSource().sendSuccess(() -> Component.literal("Set entities enlightened for " + target.getScoreboardName() + " to " + amount + "."), true);
+            context.getSource().sendSuccess(Component.literal("Set entities enlightened for " + target.getScoreboardName() + " to " + amount + "."), true);
         });
         return 1;
     }
@@ -157,10 +156,10 @@ public class Main
         if(target instanceof Player player) {
             player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
                 if(!cap.isOmnipotent()) {
-                    cap.setOmnipotent(true, player.level(), player, true);
-                    context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is now an omnipotent."), true);
+                    cap.setOmnipotent(true, player.level, player, true);
+                    context.getSource().sendSuccess(Component.literal(player.getScoreboardName() + " is now an omnipotent."), true);
                 }
-                else context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is already an omnipotent."), false);
+                else context.getSource().sendSuccess(Component.literal(player.getScoreboardName() + " is already an omnipotent."), false);
             });
         }
         else if(target instanceof HarmonicEntity harmonicEntity) {
@@ -168,18 +167,18 @@ public class Main
                 if (!harmonicEntity.getHarmonicState()) {
                     ServerPlayer player = context.getSource().getPlayer();
                     if(player != null) {
-                        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), player, target.damageSources().playerAttack(player), cap));
+                        player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), player, DamageSource.playerAttack(player), cap));
                     }
                     else {
-                        Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), null, target.damageSources().generic(), null);
+                        Utils.harmonizeEntity(livingEntity, context.getSource().getLevel(), null, DamageSource.GENERIC, null);
                     }
 
-                    if(harmonicEntity.getHarmonicState()) context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " is now enlightened."), true);
-                    else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
+                    if(harmonicEntity.getHarmonicState()) context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " is now enlightened."), true);
+                    else context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
                 }
-                else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " is already enlightened."), false);
+                else context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " is already enlightened."), false);
             }
-            else context.getSource().sendSuccess(() -> Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
+            else context.getSource().sendSuccess(Component.literal(target.getScoreboardName() + " cannot be enlightened."), false);
         }
         return 1;
     }

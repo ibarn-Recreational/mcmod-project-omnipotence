@@ -77,17 +77,17 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
                 if(cap.isOmnipotent() && !Utils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
                     if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
                         if(playerAttacker instanceof ServerPlayer serverPlayer) CriteriaTriggers.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, p_21016_);
-                        if (level() instanceof ServerLevel serverWorld) {
-                            if(serverWorld.getDragonFight() != null) playerAttacker.giveExperiencePoints(Objects.requireNonNull(serverWorld.getDragonFight()).hasPreviouslyKilledDragon() ? 1000 : 24000);
+                        if (level instanceof ServerLevel serverWorld) {
+                            if(serverWorld.dragonFight() != null) playerAttacker.giveExperiencePoints(Objects.requireNonNull(serverWorld.dragonFight()).hasPreviouslyKilledDragon() ? 1000 : 24000);
                             for(ServerPlayer serverPlayer : serverWorld.players()) {
                                 serverWorld.sendParticles(serverPlayer, ParticleTypes.END_ROD, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
                             }
                         }
                     }
-                    if(!level().isClientSide) {
+                    if(!level.isClientSide) {
                         HarmonicEntity harmonicEntity = (HarmonicEntity) thisEntity;
                         if (!harmonicEntity.getHarmonicState()) {
-                            Utils.harmonizeEntity(thisEntity, level(), playerAttacker, p_21016_, cap);
+                            Utils.harmonizeEntity(thisEntity, level, playerAttacker, p_21016_, cap);
                         }
                     }
                     cir.setReturnValue(false);
@@ -113,13 +113,13 @@ public abstract class LivingEntityMixin extends Entity implements HarmonicEntity
     public void harmonicTick(CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(getHarmonicState()) {
-            if(level() instanceof ServerLevel server && thisEntity.tickCount % 5 == 0) {
+            if(level instanceof ServerLevel server && thisEntity.tickCount % 5 == 0) {
                 Utils.spawnEnlightenmentParticles(thisEntity, server);
             }
             thisEntity.skipDropExperience();
             if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
                 thisEntity.setDeltaMovement(thisEntity.getDeltaMovement().x, 2.0D, thisEntity.getDeltaMovement().z);
-                if(thisEntity.getY() > thisEntity.level().getHeight() && thisEntity.level() instanceof ServerLevel serverWorld) {
+                if(thisEntity.getY() > thisEntity.level.getHeight() && thisEntity.level instanceof ServerLevel serverWorld) {
                     serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.END_PORTAL_SPAWN, SoundSource.MASTER, 500, 1);
                     thisEntity.kill();
                 }

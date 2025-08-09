@@ -82,11 +82,11 @@ public class Utils {
             thisEntity.captureDrops(new ArrayList<>());
             thisEntity.dropExperience();
             thisEntity.dropFromLootTable(p_21016_, true);
-            if(playerAttacker != null) thisEntity.dropCustomDeathLoot(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
+            if(playerAttacker != null) thisEntity.dropCustomDeathLoot(DamageSource.playerAttack(playerAttacker), Integer.MAX_VALUE, true);
 
             Collection<ItemEntity> drops = thisEntity.captureDrops(null);
             if(!net.minecraftforge.common.ForgeHooks.onLivingDrops(thisEntity, p_21016_, drops, playerAttacker == null ? 0 : EnchantmentHelper.getMobLooting(playerAttacker), true)) {
-                drops.forEach(e -> thisEntity.level().addFreshEntity(e));
+                drops.forEach(e -> thisEntity.level.addFreshEntity(e));
             }
 
             if(thisEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
@@ -115,14 +115,15 @@ public class Utils {
             if (thisEntity instanceof Mob mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                mob.targetSelector.removeAllGoals(goal -> goal instanceof NearestAttackableTargetGoal || goal instanceof HurtByTargetGoal);
+
+                mob.targetSelector.getAvailableGoals().removeIf((wg) -> wg.getGoal() instanceof NearestAttackableTargetGoal || wg.getGoal() instanceof HurtByTargetGoal);
             }
 
             if(Main.CONFIG.removeOnEnlightenList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString()) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 thisEntity.setSilent(true);
-                thisEntity.hurt(thisEntity.damageSources().fellOutOfWorld(), Float.MAX_VALUE);
+                thisEntity.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
                 thisEntity.remove(Entity.RemovalReason.DISCARDED);
-                thisEntity.level().playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
+                thisEntity.level.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
             }
 
             harmonicEntity.setHarmonicState(true);
@@ -142,27 +143,27 @@ public class Utils {
             if(playerConfig != null) eeMultiplier = playerConfig.eeMultiplier();
             else eeMultiplier = 1;
 
-            thisEntity.dropCustomDeathLoot(thisEntity.damageSources().playerAttack(playerAttacker), Integer.MAX_VALUE, true);
+            thisEntity.dropCustomDeathLoot(DamageSource.playerAttack(playerAttacker), Integer.MAX_VALUE, true);
             if(playerAttacker != null) playerAttacker.giveExperiencePoints(thisEntity.getExperienceReward());
 
             if (thisEntity instanceof Mob mob) {
                 mob.setCanPickUpLoot(false);
                 mob.setTarget(null);
-                mob.targetSelector.removeAllGoals(goal -> goal instanceof NearestAttackableTargetGoal || goal instanceof HurtByTargetGoal);
+                mob.targetSelector.getAvailableGoals().removeIf((wg) -> wg.getGoal() instanceof NearestAttackableTargetGoal || wg.getGoal() instanceof HurtByTargetGoal);
             }
             String entityID = Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(thisEntity.getType())).toString();
 
             if(Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*")) {
                 thisEntity.setSilent(true);
-                thisEntity.hurt(thisEntity.damageSources().fellOutOfWorld(), Float.MAX_VALUE);
+                thisEntity.hurt(DamageSource.OUT_OF_WORLD, Float.MAX_VALUE);
                 thisEntity.remove(Entity.RemovalReason.DISCARDED);
-                thisEntity.level().playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
+                thisEntity.level.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
             }
 
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
                 EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                 if(conversionType != null) {
-                    Entity e = conversionType.create(playerAttacker.level());
+                    Entity e = conversionType.create(playerAttacker.level);
                     if(thisEntity instanceof Mob mob && e instanceof Mob) {
                         EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
                         e = mob.convertTo(tMobType, true);
@@ -234,7 +235,7 @@ public class Utils {
 
     public static void respawnPlayer(ServerPlayer player) {
         // Sanity check
-        if (!player.level().isClientSide()) {
+        if (!player.level.isClientSide()) {
             BlockPos pos = player.getRespawnPosition();
             ResourceKey<Level> key = player.getRespawnDimension();
 
@@ -268,10 +269,10 @@ public class Utils {
     }
 
     public static boolean enlightenedPlayerInCreative(Player player) {
-        if(!player.level().isClientSide() && player instanceof ServerPlayer serverPlayer) {
+        if(!player.level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             return serverPlayer.gameMode.isCreative();
         }
-        else if(player.level().isClientSide() && player instanceof AbstractClientPlayer clientPlayer) {
+        else if(player.level.isClientSide() && player instanceof AbstractClientPlayer clientPlayer) {
             PlayerInfo playerInfo = clientPlayer.getPlayerInfo();
             return playerInfo != null && playerInfo.getGameMode().isCreative();
         }

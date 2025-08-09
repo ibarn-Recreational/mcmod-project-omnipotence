@@ -39,7 +39,7 @@ public class ServerPlayerGameModeMixin {
                 BlockState bs = level.getBlockState(p_9281_);
                 if(bs.is(BlockTags.LOGS) || bs.is(BlockTags.LEAVES)) {
                     BlockEntity blockEntity = bs.hasBlockEntity() ? level.getBlockEntity(p_9281_) : null;
-                    Block.dropResources(bs, level, BlockPos.containing(player.position()), blockEntity, player, player.getItemInHand(InteractionHand.MAIN_HAND));
+                    Block.dropResources(bs, level, new BlockPos(player.position()), blockEntity, player, player.getItemInHand(InteractionHand.MAIN_HAND));
                     RandomSource random = level.getRandom();
                     for(int i = 0; i < 10; i++) {
                         double x = ((p_9281_.getX() + 0.5) + ((double) random.nextIntBetweenInclusive(60, 80) / 100) * random.nextIntBetweenInclusive(-1, 1));

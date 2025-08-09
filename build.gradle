@@ -23,7 +23,7 @@ plugins {
     id 'org.spongepowered.mixin' version '0.7.+'
 }
 
-version = '1.4.0.1-1.20-forge'
+version = '1.4.0.1-1.19-forge'
 group = 'com.ibarnstormer.pom' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'project-omnipotence'
 
@@ -45,7 +45,7 @@ minecraft {
     //
     // Use non-default mappings at your own risk. They may not always work.
     // Simply re-run your setup task after changing the mappings to update your workspace.
-    mappings channel: 'official', version: '1.20'
+    mappings channel: 'official', version: '1.19.2'
 
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg') // Currently, this location cannot be changed from the default.
 
@@ -160,7 +160,7 @@ dependencies {
     // Specify the version of Minecraft to use. If this is any group other than 'net.minecraft', it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency, and its patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.20.1-47.1.0'
+    minecraft 'net.minecraftforge:forge:1.19.2-43.4.0'
 	annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
 
     // Real mod deobf dependency examples - these get remapped to your current mappings
@@ -172,27 +172,27 @@ dependencies {
     // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
 
     // Compats
-    compileOnly fg.deobf("curse.maven:carry-on-274259:4882500")
-    runtimeOnly fg.deobf("curse.maven:carry-on-274259:4882500")
+    //compileOnly fg.deobf("curse.maven:carry-on-274259:4882500")
+    //runtimeOnly fg.deobf("curse.maven:carry-on-274259:4882500")
 
-    compileOnly fg.deobf("com.mega.uom:fantasy_ending:2.7.14")
+    //compileOnly fg.deobf("com.mega.uom:fantasy_ending:2.7.14")
 
     // Testing
-    runtimeOnly fg.deobf("curse.maven:lionfish-api-1001614:5363774")
-    runtimeOnly fg.deobf("curse.maven:l_ender-s-cataclysm-551586:5474791")
-    runtimeOnly fg.deobf("curse.maven:the-twilight-forest-227639:4755494")
-    runtimeOnly fg.deobf("curse.maven:aether-255308:4771519")
-    runtimeOnly fg.deobf("curse.maven:illage-and-spillage-finally-ported-1079714:5630627")
-    runtimeOnly fg.deobf("curse.maven:terramity-1084134:5699144")
-    runtimeOnly fg.deobf("curse.maven:caelus-308989:5281700")
-    runtimeOnly fg.deobf("curse.maven:geckolib-388172:5675230")
-    runtimeOnly fg.deobf("curse.maven:patchouli-306770:4633797")
-    runtimeOnly fg.deobf("curse.maven:curios-309927:6058834")
-    runtimeOnly fg.deobf("curse.maven:playeranimator-658587:4587214")
-    runtimeOnly fg.deobf("curse.maven:attributefix-280510:4911084")
-    runtimeOnly fg.deobf("curse.maven:irons-spells-n-spellbooks-855414:6054196")
+    //runtimeOnly fg.deobf("curse.maven:lionfish-api-1001614:5363774")
+    //runtimeOnly fg.deobf("curse.maven:l_ender-s-cataclysm-551586:5474791")
+    //runtimeOnly fg.deobf("curse.maven:the-twilight-forest-227639:4755494")
+    //runtimeOnly fg.deobf("curse.maven:aether-255308:4771519")
+    //runtimeOnly fg.deobf("curse.maven:illage-and-spillage-finally-ported-1079714:5630627")
+    //runtimeOnly fg.deobf("curse.maven:terramity-1084134:5699144")
+    //runtimeOnly fg.deobf("curse.maven:caelus-308989:5281700")
+    //runtimeOnly fg.deobf("curse.maven:geckolib-388172:5675230")
+    //runtimeOnly fg.deobf("curse.maven:patchouli-306770:4633797")
+    //runtimeOnly fg.deobf("curse.maven:curios-309927:6058834")
+    //runtimeOnly fg.deobf("curse.maven:playeranimator-658587:4587214")
+    //runtimeOnly fg.deobf("curse.maven:attributefix-280510:4911084")
+    //runtimeOnly fg.deobf("curse.maven:irons-spells-n-spellbooks-855414:6054196")
 
-    runtimeOnly fg.deobf("com.ibarnstormer.ibarnskylands:ibarnskylands-1.0.6:1.0.6")
+    //runtimeOnly fg.deobf("com.ibarnstormer.ibarnskylands:ibarnskylands-1.0.6:1.0.6")
 
 
 

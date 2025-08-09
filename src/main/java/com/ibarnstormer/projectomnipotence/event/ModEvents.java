@@ -51,7 +51,7 @@ public class ModEvents {
 
     public static void syncPlayerData(Player player) {
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            cap.setOmnipotent(cap.isOmnipotent(), player.level(), player, false);
+            cap.setOmnipotent(cap.isOmnipotent(), player.level, player, false);
             cap.setEnlightenedEntities(cap.getEnlightenedEntities(), player);
             ModNetwork.sendToPlayer((ServerPlayer) player, new UpdateModCapabilitiesPacket(cap.isOmnipotent(), cap.getEnlightenedEntities()));
         });

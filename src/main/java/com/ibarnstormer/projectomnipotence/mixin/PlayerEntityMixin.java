@@ -16,7 +16,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -66,7 +65,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             POPlayerConfig config = Utils.getConfigForPlayer(player);
 
             if(config != null) {
-                if(!cap.isOmnipotent() && config.enlightenedOnStart()) cap.setOmnipotent(true, player.level(), player, true);
+                if(!cap.isOmnipotent() && config.enlightenedOnStart()) cap.setOmnipotent(true, player.level, player, true);
                 int score = config.eeHandicap();
                 cap.setEnlightenedEntities(Math.max(score, cap.getEnlightenedEntities()), player);
             }
@@ -75,12 +74,12 @@ public abstract class PlayerEntityMixin extends LivingEntity {
             assert playerLuck != null;
 
             if(cap.isOmnipotent()) {
-                if(level() instanceof ServerLevel server && player.tickCount % 5 == 0 && !player.isSpectator() && Main.CONFIG.omnipotentPlayerParticles) {
+                if(level instanceof ServerLevel server && player.tickCount % 5 == 0 && !player.isSpectator() && Main.CONFIG.omnipotentPlayerParticles) {
                     Utils.spawnEnlightenmentParticles(player, server);
                 }
 
                 if(Main.CONFIG.omnipotentPlayersGlow && !player.hasEffect(MobEffects.GLOWING)) {
-                    player.addEffect(new MobEffectInstance(MobEffects.GLOWING, -1, 0, true, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 1, 0, true, false, false));
                 }
 
                 Map<MobEffect, MobEffectInstance> localMEICollection = Maps.newHashMap();
@@ -111,13 +110,13 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 if(score > 0 && eeDelta == 0) eeDelta = score;
 
                 if(score > this.eeDelta && Math.ceil((double) score / Main.CONFIG.luckLevelEntityGoal) > Math.ceil((double) this.eeDelta / Main.CONFIG.luckLevelEntityGoal) && score < (Main.CONFIG.totalLuckLevels + 1) * Main.CONFIG.luckLevelEntityGoal && score > Main.CONFIG.luckLevelEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.attunement").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+                    if(!level.isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.attunement").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
                 if(score > this.eeDelta && score >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && eeDelta < Main.CONFIG.invulnerabilityEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.invulnerability").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+                    if(!level.isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.invulnerability").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
                 if(score > this.eeDelta && score >= Main.CONFIG.flightEntityGoal && Main.CONFIG.omnipotentPlayersCanGainFlight && eeDelta < Main.CONFIG.flightEntityGoal) {
-                    if(!level().isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.flight").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
+                    if(!level.isClientSide) player.displayClientMessage(Component.translatable("message.projectomnipotence.flight").withStyle(Style.EMPTY.withColor(ChatFormatting.YELLOW)), false);
                 }
 
                 this.eeDelta = score;
@@ -145,9 +144,9 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     public void modulateDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            Level world = player.level();
+            Level world = player.level;
             if (cap.isOmnipotent()) {
-                if(source.is(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClientSide() && !player.getAbilities().mayfly && player.getY() <= world.getMinBuildHeight()) {
+                if(source.isBypassInvul() && !world.isClientSide() && !player.getAbilities().mayfly && player.getY() <= world.getMinBuildHeight()) {
                     MinecraftServer server = player.getServer();
                     if(server != null) {
                         world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0f, 1);
@@ -163,7 +162,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                     source.getEntity().getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent(c -> attackerIsOmnipotent.set(c.isOmnipotent()));
                     if (Main.CONFIG.omnipotentPlayersReflectDamage && !attackerIsOmnipotent.get()) {
                         if(Main.CONFIG.damageReflectionBlackList.contains(Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(source.getEntity().getType())).toString()) || Main.CONFIG.damageReflectionBlackList.contains("*")) {
-                            source.getEntity().hurt(source.getEntity().damageSources().generic(), amount);
+                            source.getEntity().hurt(DamageSource.GENERIC, amount);
                         }
                         else source.getEntity().hurt(source, amount);
                     }
@@ -187,15 +186,15 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     public void onAttack(Entity p_36347_, CallbackInfo ci) {
         Player player = this.getPlayer();
         player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-            if(cap.isOmnipotent() && !player.level().isClientSide) {
+            if(cap.isOmnipotent() && !player.level.isClientSide) {
                 float f = EnchantmentHelper.getSweepingDamageRatio(player);
 
                 List<LivingEntity> list;
 
                 if(f > 0) {
-                    list = player.level().getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0D, 0.25D, 1.0D));
+                    list = player.level.getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0D, 0.25D, 1.0D));
                     for(LivingEntity entity : list) {
-                        if(entity != p_36347_ && entity != player && entity instanceof HarmonicEntity harmonicEntity && !harmonicEntity.getHarmonicState()) Utils.harmonizeEntity(entity, player.level(), player, entity.damageSources().playerAttack(player), cap);
+                        if(entity != p_36347_ && entity != player && entity instanceof HarmonicEntity harmonicEntity && !harmonicEntity.getHarmonicState()) Utils.harmonizeEntity(entity, player.level, player, DamageSource.playerAttack(player), cap);
                     }
                     player.sweepAttack();
                 }
@@ -206,25 +205,25 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 for(LivingEntity le : list) {
                     String entityID = Objects.requireNonNull(ForgeRegistries.ENTITY_TYPES.getKey(le.getType())).toString();
                     if(!((HarmonicEntity) le).getHarmonicState() && (Main.CONFIG.removeOnEnlightenList.contains(entityID) || Main.CONFIG.removeOnEnlightenList.contains("*"))) {
-                        Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
+                        Utils.harmonizeEntity(le, player.level, player, DamageSource.playerAttack(player), cap);
                     }
                     else if (!((HarmonicEntity) le).getHarmonicState() && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !Utils.enlightenedPlayerInCreative(player)) {
                         EntityType<?> conversionType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation(Main.CONFIG.convertUponEnlightened.get(entityID)));
                         if(conversionType != null) {
-                            Entity e = conversionType.create(player.level());
+                            Entity e = conversionType.create(player.level);
                             if(le instanceof Mob mob && e instanceof Mob) {
                                 EntityType<? extends Mob> tMobType = (EntityType<? extends Mob>) e.getType();
                                 e = mob.convertTo(tMobType, true);
                             }
                             else if(e != null) {
-                                player.level().addFreshEntity(e);
-                                Utils.harmonizeEntity(le, player.level(), player, player.damageSources().playerAttack(player), cap);
+                                player.level.addFreshEntity(e);
+                                Utils.harmonizeEntity(le, player.level, player, DamageSource.playerAttack(player), cap);
                                 le.setSilent(true);
                                 le.remove(RemovalReason.DISCARDED);
-                                le.level().playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
+                                le.level.playSound(null, le.getX(), le.getY(), le.getZ(), SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.MASTER, 1, 2);
                             }
 
-                            if(e instanceof LivingEntity tle) Utils.harmonizeEntity(tle, player.level(), player, player.damageSources().playerAttack(player), cap);
+                            if(e instanceof LivingEntity tle) Utils.harmonizeEntity(tle, player.level, player, DamageSource.playerAttack(player), cap);
                         }
                     }
                 }
