@@ -79,7 +79,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 }
 
                 if(Main.CONFIG.omnipotentPlayersGlow && !player.hasEffect(MobEffects.GLOWING)) {
-                    player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 1, 0, true, false, false));
+                    player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 1200, 0, true, false, false));
                 }
 
                 Map<MobEffect, MobEffectInstance> localMEICollection = Maps.newHashMap();
