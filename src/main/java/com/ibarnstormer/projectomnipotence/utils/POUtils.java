@@ -2,12 +2,16 @@ package com.ibarnstormer.projectomnipotence.utils;
 
 import com.google.common.collect.ImmutableSet;
 import com.ibarnstormer.projectomnipotence.Main;
+import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.IHarmonicEntity;
 import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.*;
+import net.minecraft.block.entity.BeaconBlockEntity;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -98,8 +102,8 @@ public class POUtils {
         finalizers = new HashMap<>();
 
         // Zombie Villager to Villager
-        addConversionFinalizer(EntityType.ZOMBIE_VILLAGER, new POEntityConversionHelper<ZombieVillagerEntity, VillagerEntity>(EntityType.VILLAGER, (source) -> {
-            if(source.getType() == EntityType.ZOMBIE_VILLAGER) {
+        addConversionFinalizer(EntityType.ZOMBIE_VILLAGER, new POEntityConversionHelper<>(EntityType.VILLAGER, (source, converter) -> {
+            if (source.getType() == EntityType.ZOMBIE_VILLAGER) {
 
                 return (villager) -> {
                     World world = villager.getWorld();
@@ -126,35 +130,40 @@ public class POUtils {
                             villager.setExperience(experience.getInt(source));
                             villager.initialize(serverWorld, serverWorld.getLocalDifficulty(villager.getBlockPos()), SpawnReason.CONVERSION, null);
                             villager.reinitializeBrain(serverWorld);
+
+                            if (converter instanceof ServerPlayerEntity playerEntity) {
+                                Criteria.CURED_ZOMBIE_VILLAGER.trigger(playerEntity, source, villager);
+                                playerEntity.getWorld().handleInteraction(EntityInteraction.ZOMBIE_VILLAGER_CURED, playerEntity, villager);
+                            }
                         } catch (Exception ignored) {
                         }
                     }
                 };
-            }
-            else return (e) -> {};
+            } else return (e) -> {
+            };
 
         }));
 
         // Zombified Piglin -> Piglin
-        addConversionFinalizer(EntityType.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<ZombifiedPiglinEntity, PiglinEntity>(EntityType.PIGLIN, (source) -> {
-            if(source.getType() == EntityType.ZOMBIFIED_PIGLIN) {
+        addConversionFinalizer(EntityType.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<>(EntityType.PIGLIN, (source, converter) -> {
+            if (source.getType() == EntityType.ZOMBIFIED_PIGLIN) {
                 return (piglin) -> {
                     for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                         piglin.equipStack(slot, ItemStack.EMPTY);
                     }
                 };
-            }
-            else return (e) -> {};
+            } else return (e) -> {
+            };
         }));
 
     }
 
     // Addons can add finalizers here
-    public static void addConversionFinalizer(EntityType<? extends MobEntity> sourceType, POEntityConversionHelper helper) {
+    public static <S extends MobEntity, T extends MobEntity> void addConversionFinalizer(EntityType<S> sourceType, POEntityConversionHelper<S, T> helper) {
         finalizers.put(sourceType, helper);
     }
 
-    public static POEntityConversionHelper getConversionFinalizer(EntityType<? extends MobEntity> type) {
+    public static <S extends MobEntity> POEntityConversionHelper<? extends MobEntity, ? extends MobEntity> getConversionFinalizer(EntityType<S> type) {
         return finalizers.get(type);
     }
 
@@ -243,7 +252,7 @@ public class POUtils {
                 });
 
                 POEntityConversionHelper helper = getConversionFinalizer((EntityType<? extends MobEntity>) mob.getType());
-                if(helper != null) e = helper.convertEntity(mob);
+                if(helper != null) e = helper.convertEntity(mob, player);
                 else {
                     EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
                     e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
@@ -381,7 +390,11 @@ public class POUtils {
 
                 if(livingEntity instanceof MobEntity mob && e instanceof MobEntity) {
                     POEntityConversionHelper helper = finalizers.get(mob.getType());
-                    if(helper != null) e = helper.convertEntity(mob);
+
+                    PlayerEntity converter = null;
+                    if(serverWorld.getBlockEntity(beaconPos) instanceof EnlighteningBeacon beacon) converter = beacon.getOmnipotentOwner();
+
+                    if(helper != null) e = helper.convertEntity(mob, converter);
                     else {
                         EntityType<? extends MobEntity> tMobType = (EntityType<? extends MobEntity>) e.getType();
                         e = mob.convertTo(tMobType, new EntityConversionContext(EntityConversionType.SINGLE, true, true, mob.getScoreboardTeam()), SpawnReason.CONVERSION, (newMob) -> {});
