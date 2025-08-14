@@ -30,7 +30,7 @@ public class ProjectileEntityMixin {
         if(hitResult instanceof EntityHitResult entityHitResult) {
             Entity entity = entityHitResult.getEntity();
             entity.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if(cap.isOmnipotent() && cap.getEnlightenedEntities() > Main.CONFIG.invulnerabilityEntityGoal) {
+                if(cap.isOmnipotent() && cap.getEnlightenedEntities() > Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersDeleteProjectiles) {
                     if(projectile.getOwner() != entity) {
                         if (entity.level instanceof ServerLevel serverLevel) {
                             serverLevel.sendParticles(ParticleTypes.END_ROD, projectile.getX(), projectile.getY() + projectile.getBoundingBox().getYsize() / 2, projectile.getZ(), 5, (Math.random() * projectile.getBoundingBox().getXsize() / 2) * 0.5, (Math.random() * projectile.getBoundingBox().getYsize() / 2) * 0.5, (Math.random() * projectile.getBoundingBox().getZsize() / 2) * 0.5, 0.025);

@@ -55,6 +55,7 @@ public class ModConfig {
     public boolean omnipotentPlayersCanBecomeInvulnerable = true;
     public boolean omnipotentPlayersCanGainFlight = false;
     public boolean omnipotentPlayersDampenExplosions = false;
+    public boolean omnipotentPlayersDeleteProjectiles = false;
     public boolean omnipotentPlayersDontGriefTrees = true;
     public boolean omnipotentPlayersReflectDamage = true;
     public boolean omnipotentPlayersRemoveCurses = true;
