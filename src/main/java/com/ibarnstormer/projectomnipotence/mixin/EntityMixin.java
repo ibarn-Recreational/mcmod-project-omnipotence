@@ -31,6 +31,12 @@ public class EntityMixin {
             });
         }
         if(thisEntity instanceof HarmonicEntity harmonicEntity) {
+            if(p_20355_ instanceof Player player) {
+                player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
+                    if (!cap.isOmnipotent() && harmonicEntity.getHarmonicState()) cir.setReturnValue(true);
+                });
+            }
+
             if(!(p_20355_ instanceof Player) && harmonicEntity.getHarmonicState()) cir.setReturnValue(true);
         }
         if (p_20355_ instanceof HarmonicEntity harmonicEntity) {
