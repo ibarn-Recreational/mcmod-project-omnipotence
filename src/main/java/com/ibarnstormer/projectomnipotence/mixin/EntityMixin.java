@@ -4,6 +4,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
 import com.ibarnstormer.projectomnipotence.entity.HarmonicEntity;
+import com.ibarnstormer.projectomnipotence.utils.Utils;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.*;
@@ -24,18 +25,16 @@ public class EntityMixin {
     @Inject(method = "isAlliedTo(Lnet/minecraft/world/entity/Entity;)Z", at = @At("RETURN"), cancellable = true)
     public void teamMate(Entity p_20355_, CallbackInfoReturnable<Boolean> cir) {
         Entity thisEntity = this.getEntity();
-        if(thisEntity instanceof HarmonicEntity harmonicEntity) {
-            if(harmonicEntity.getHarmonicState()) {
-                cir.setReturnValue(true);
-            }
-            if(p_20355_ instanceof Player player) {
-                player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                    if(cap.isOmnipotent()) cir.setReturnValue(true);
-                });
-            }
+        if(thisEntity instanceof Player player && !Utils.enlightenedPlayerInCreative(player)) {
+            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
+                if (cap.isOmnipotent()) cir.setReturnValue(true);
+            });
         }
-        if(p_20355_ instanceof HarmonicEntity harmonicEntity) {
-            if(harmonicEntity.getHarmonicState()) cir.setReturnValue(true);
+        if(thisEntity instanceof HarmonicEntity harmonicEntity) {
+            if(!(p_20355_ instanceof Player) && harmonicEntity.getHarmonicState()) cir.setReturnValue(true);
+        }
+        if (p_20355_ instanceof HarmonicEntity harmonicEntity) {
+            if (harmonicEntity.getHarmonicState()) cir.setReturnValue(true);
         }
     }
 
