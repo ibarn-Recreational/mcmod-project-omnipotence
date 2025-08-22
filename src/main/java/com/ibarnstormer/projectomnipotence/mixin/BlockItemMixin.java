@@ -20,8 +20,9 @@ public class BlockItemMixin {
         Player player = p_40577_.getPlayer();
         if(player != null) {
             player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> {
-                if (cap.isOmnipotent() && p_40577_.getLevel().getBlockEntity(p_40577_.getClickedPos()) instanceof BeaconBlockEntity beacon){
-                    ((EnlighteningBeacon) beacon).setAsEnlightening(player);
+                if (p_40577_.getLevel().getBlockEntity(p_40577_.getClickedPos()) instanceof BeaconBlockEntity beacon){
+                    if(cap.isOmnipotent()) ((EnlighteningBeacon) beacon).setAsEnlightening(player);
+                    else ((EnlighteningBeacon) beacon).setAsEnlightening(null);
                 }
             });
         }

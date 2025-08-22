@@ -94,7 +94,7 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
 
     @Override
     public void setAsEnlightening(@Nullable Player player) {
-        this.isEnlightening = true;
+        this.isEnlightening = player != null;
         this.omnipotentOwner = player != null ? player.getUUID() : new UUID(0L, 0L);
         this.cachedEnlightenedAmount = 0;
     }
