@@ -43,16 +43,22 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
 
     @Inject(method = "load", at = @At("TAIL"))
     private void beaconBlockEntity$load(CompoundTag nbt, CallbackInfo ci) {
-        this.isEnlightening = nbt.getBoolean("isEnlightening");
-        this.omnipotentOwner = nbt.getUUID("omnipotentOwnerUUID");
-        this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount");
+        try {
+            this.isEnlightening = nbt.getBoolean("isEnlightening");
+            this.omnipotentOwner = nbt.getUUID("omnipotentOwnerUUID");
+            this.cachedEnlightenedAmount = nbt.getInt("cachedEnlightenedAmount");
+        }
+        catch(Exception ignored) {}
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void beaconBlockEntity$saveAdditional(CompoundTag nbt, CallbackInfo ci) {
-        nbt.putBoolean("isEnlightening", this.isEnlightening);
-        nbt.putUUID("omnipotentOwnerUUID", this.omnipotentOwner);
-        nbt.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
+        try {
+            nbt.putBoolean("isEnlightening", this.isEnlightening);
+            nbt.putUUID("omnipotentOwnerUUID", this.omnipotentOwner);
+            nbt.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
+        }
+        catch(Exception ignored) {}
     }
 
     @Inject(method = "applyEffects", at = @At(value = "HEAD"))
