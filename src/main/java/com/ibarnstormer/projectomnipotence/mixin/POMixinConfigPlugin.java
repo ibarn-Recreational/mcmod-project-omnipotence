@@ -13,7 +13,9 @@ import java.util.function.Supplier;
 
 public class POMixinConfigPlugin implements IMixinConfigPlugin {
 
-    private static final Map<String, Supplier<Boolean>> externMixins = ImmutableMap.of();
+    private static final Map<String, Supplier<Boolean>> externMixins = ImmutableMap.of(
+        "com.ibarnstormer.projectomnipotence.mixin.compat.TameableUtilsMixin", () -> LoadingModList.get().getModFileById("domesticationinnovation") != null
+    );
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {

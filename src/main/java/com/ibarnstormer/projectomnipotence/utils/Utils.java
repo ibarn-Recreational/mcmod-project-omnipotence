@@ -21,7 +21,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.InstrumentTags;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -41,6 +40,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Utils {
@@ -277,6 +277,19 @@ public class Utils {
             return playerInfo != null && playerInfo.getGameMode().isCreative();
         }
         else return false;
+    }
+
+    public static boolean isEnlightenedOrOmnipotent(Entity entity) {
+        if(entity instanceof Player player) {
+            AtomicBoolean omnipotent = new AtomicBoolean(false);
+            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> omnipotent.set(cap.isOmnipotent()));
+            return omnipotent.get();
+        }
+        else if(entity instanceof HarmonicEntity harmonicEntity) {
+            return harmonicEntity.getHarmonicState();
+        }
+        else return false;
+
     }
 
 

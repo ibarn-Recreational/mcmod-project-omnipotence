@@ -23,7 +23,8 @@
     "ProjectileEntityMixin",
     "ServerPlayerGameModeMixin",
     "ServerPlayerMixin",
-    "VillagerEntityMixin"
+    "VillagerEntityMixin",
+    "compat.TameableUtilsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
