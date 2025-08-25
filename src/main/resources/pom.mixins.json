@@ -13,7 +13,6 @@
     "BlockItemMixin",
     "BrainMixin",
     "EnchantmentHelperMixin",
-    "EntityActuallyHurtMixin",
     "EntityMixin",
     "ItemMixin",
     "KillCommandMixin",
@@ -26,6 +25,7 @@
     "ServerPlayerGameModeMixin",
     "ServerPlayerMixin",
     "VillagerEntityMixin",
+    "compat.EntityActuallyHurtMixin",
     "compat.TameableUtilsMixin"
   ],
   "injectors": {

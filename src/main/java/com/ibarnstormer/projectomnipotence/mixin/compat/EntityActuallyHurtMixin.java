@@ -1,4 +1,4 @@
-package com.ibarnstormer.projectomnipotence.mixin;
+package com.ibarnstormer.projectomnipotence.mixin.compat;
 
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.capability.ModCapabilityProvider;
