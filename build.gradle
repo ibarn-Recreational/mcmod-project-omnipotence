@@ -23,7 +23,7 @@ plugins {
     id 'org.spongepowered.mixin' version '0.7.+'
 }
 
-version = '1.4.0.2-1.20-forge'
+version = '1.4.1-1.20-forge'
 group = 'com.ibarnstormer.pom' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'project-omnipotence'
 
@@ -174,6 +174,9 @@ dependencies {
     // Compats
     compileOnly fg.deobf("curse.maven:carry-on-274259:4882500")
     runtimeOnly fg.deobf("curse.maven:carry-on-274259:4882500")
+
+    implementation fg.deobf("curse.maven:domestication-innovation-591149:4911955")
+    implementation fg.deobf("curse.maven:citadel-331936:6002521")
 
     compileOnly fg.deobf("com.mega.uom:fantasy_ending:2.7.14")
 

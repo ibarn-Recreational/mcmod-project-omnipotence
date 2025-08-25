@@ -115,7 +115,7 @@ public class Main
                     POPlayerConfig config = Utils.getConfigForPlayer(player);
                     if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
 
-                    if (cannotLoseEnlightenment) {
+                    if (!cannotLoseEnlightenment) {
                         cap.setOmnipotent(false, player.level(), player, true);
                         context.getSource().sendSuccess(() -> Component.literal(player.getScoreboardName() + " is no longer an omnipotent."), true);
                     }

@@ -41,6 +41,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Utils {
@@ -278,5 +279,16 @@ public class Utils {
         else return false;
     }
 
+    public static boolean isEnlightenedOrOmnipotent(Entity entity) {
+        if(entity instanceof Player player) {
+            AtomicBoolean omnipotent = new AtomicBoolean(false);
+            player.getCapability(ModCapabilityProvider.OMNIPOTENCE_CAPABILITY).ifPresent((cap) -> omnipotent.set(cap.isOmnipotent()));
+            return omnipotent.get();
+        }
+        else if(entity instanceof HarmonicEntity harmonicEntity) {
+            return harmonicEntity.getHarmonicState();
+        }
+        else return false;
+    }
 
 }
