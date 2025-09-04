@@ -10,8 +10,6 @@ import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.*;
-import net.minecraft.block.entity.BeaconBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -27,8 +25,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.passive.GoatEntity;
-import net.minecraft.entity.passive.HappyGhastEntity;
-import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.loot.LootTable;
@@ -39,6 +35,7 @@ import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.tag.ItemTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -69,20 +66,7 @@ public class POUtils {
     private static final HashMap<EntityType<? extends MobEntity>, POEntityConversionHelper<? extends MobEntity, ? extends MobEntity>> finalizers;
     private static final ImmutableSet<POPlayerConfig> permaEnlightened;
 
-    private static final Item[] discs = {
-            Items.MUSIC_DISC_11,
-            Items.MUSIC_DISC_13,
-            Items.MUSIC_DISC_BLOCKS,
-            Items.MUSIC_DISC_CAT,
-            Items.MUSIC_DISC_CHIRP,
-            Items.MUSIC_DISC_FAR,
-            Items.MUSIC_DISC_MALL,
-            Items.MUSIC_DISC_MELLOHI,
-            Items.MUSIC_DISC_STAL,
-            Items.MUSIC_DISC_STRAD,
-            Items.MUSIC_DISC_WAIT,
-            Items.MUSIC_DISC_WARD,
-    };
+    private static final List<Item> discs;
 
     public static final ProjectileDeflection OMNIPOTENT_PROJECTILE_DEFLECTOR;
 
@@ -92,6 +76,8 @@ public class POUtils {
         permaEnlightenedBuilder.add(new POPlayerConfig(null, "c7913f14-83b7-4c63-bfa6-7d06f51ba930", true, 0, 10));
 
         permaEnlightened = permaEnlightenedBuilder.build();
+
+        discs = Registries.ITEM.stream().filter((item) -> item.getRegistryEntry().isIn(ItemTags.CREEPER_DROP_MUSIC_DISCS)).toList();
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
             if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
@@ -276,7 +262,7 @@ public class POUtils {
     private static void handleCustomDrops(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, ServerWorld serverWorld) {
         if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
             int chance = livingEntity.getRandom().nextBetween(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(EntityAttributes.LUCK) * 2));
-            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs[livingEntity.getRandom().nextBetween(0, discs.length - 1)]));
+            if(chance == 0) livingEntity.dropStack(serverWorld, new ItemStack(discs.get(livingEntity.getRandom().nextBetween(0, discs.size() - 1))));
         }
 
         if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
