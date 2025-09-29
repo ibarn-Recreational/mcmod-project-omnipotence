@@ -80,7 +80,7 @@ public class POUtils {
         discs = Registries.ITEM.stream().filter((item) -> item.getRegistryEntry().isIn(ItemTags.CREEPER_DROP_MUSIC_DISCS)).toList();
 
         OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
-            if(hitEntity != null && hitEntity.getWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
+            if(hitEntity != null && hitEntity.getEntityWorld() instanceof ServerWorld serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.BLOCK_CONDUIT_ACTIVATE, hitEntity.getSoundCategory(), 1.0f, 2.0f);
             projectile.setVelocity(projectile.getVelocity().multiply(2.0));
             ProjectileDeflection.SIMPLE.deflect(projectile, hitEntity, random);
         };
@@ -92,7 +92,7 @@ public class POUtils {
             if (source.getType() == EntityType.ZOMBIE_VILLAGER) {
 
                 return (villager) -> {
-                    World world = villager.getWorld();
+                    World world = villager.getEntityWorld();
 
                     if (world instanceof ServerWorld serverWorld) {
                         try {
@@ -119,7 +119,7 @@ public class POUtils {
 
                             if (converter instanceof ServerPlayerEntity playerEntity) {
                                 Criteria.CURED_ZOMBIE_VILLAGER.trigger(playerEntity, source, villager);
-                                playerEntity.getWorld().handleInteraction(EntityInteraction.ZOMBIE_VILLAGER_CURED, playerEntity, villager);
+                                playerEntity.getEntityWorld().handleInteraction(EntityInteraction.ZOMBIE_VILLAGER_CURED, playerEntity, villager);
                             }
                         } catch (Exception ignored) {
                         }
@@ -173,7 +173,7 @@ public class POUtils {
 
     public static void grantOmnipotence(PlayerEntity player, boolean isCopyFrom) {
         ((IPOPlayerEntity) player).setOmnipotent(true);
-        if(player.getWorld() instanceof ServerWorld serverWorld && !isCopyFrom) {
+        if(player.getEntityWorld() instanceof ServerWorld serverWorld && !isCopyFrom) {
             player.sendMessage(Text.translatable("message.projectomnipotence.ascend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
             serverWorld.spawnParticles(ParticleTypes.END_ROD, player.getX(), player.getY() + player.getBoundingBox().getLengthY() / 2, player.getZ(), 20, (Math.random() * player.getBoundingBox().getLengthX() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthY() / 2) * 0.5, (Math.random() * player.getBoundingBox().getLengthZ() / 2) * 0.5, 0.075);
         }
@@ -185,7 +185,7 @@ public class POUtils {
 
     public static void revokeOmnipotence(PlayerEntity player) {
         ((IPOPlayerEntity) player).setOmnipotent(false);
-        if(!player.getWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
+        if(!player.getEntityWorld().isClient()) player.sendMessage(Text.translatable("message.projectomnipotence.descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
         if(Main.CONFIG.omnipotentPlayersGlow && player.hasStatusEffect(StatusEffects.GLOWING)) player.removeStatusEffect(StatusEffects.GLOWING);
         boolean inSurvival = !player.isSpectator() && !enlightenedPlayerInCreative(player);
         if(Main.CONFIG.omnipotentPlayersCanGainFlight && getEntitiesEnlightened(player) >= Main.CONFIG.flightEntityGoal && inSurvival) {
@@ -228,8 +228,8 @@ public class POUtils {
         }
         else if (!isInHarmony(target) && Main.CONFIG.convertUponEnlightened.containsKey(entityID) && !enlightenedPlayerInCreative(player)) {
             EntityType<?> conversionType = Registries.ENTITY_TYPE.get(Identifier.of(Main.CONFIG.convertUponEnlightened.get(entityID)));
-            Entity e = conversionType.create(player.getWorld(), SpawnReason.CONVERSION);
-            if(target instanceof MobEntity mob && e instanceof MobEntity && player.getWorld() instanceof ServerWorld serverWorld) {
+            Entity e = conversionType.create(player.getEntityWorld(), SpawnReason.CONVERSION);
+            if(target instanceof MobEntity mob && e instanceof MobEntity && player.getEntityWorld() instanceof ServerWorld serverWorld) {
                 mob.dropLoot(serverWorld, mob.getDamageSources().playerAttack(player), true);
                 handleCustomDrops(mob, player, serverWorld);
                 forceDropEquipment(mob, serverWorld, (stack) -> {
@@ -245,11 +245,11 @@ public class POUtils {
                 }
             }
             else if(e != null) {
-                player.getWorld().spawnEntity(e);
+                player.getEntityWorld().spawnEntity(e);
                 harmonizeEntity(target, player, source);
                 target.setSilent(true);
                 target.remove(Entity.RemovalReason.DISCARDED);
-                target.getWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.PLAYERS, 1, 2);
+                target.getEntityWorld().playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.PLAYERS, 1, 2);
             }
 
             if(e instanceof LivingEntity tle) harmonizeEntity(tle, player, source);
@@ -288,7 +288,7 @@ public class POUtils {
     }
 
     public static void harmonizeEntity(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, DamageSource source) {
-        if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+        if (livingEntity.getEntityWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
 
             POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
 
@@ -318,7 +318,7 @@ public class POUtils {
                 livingEntity.setSilent(true);
                 livingEntity.damage(serverWorld, livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
                 livingEntity.remove(Entity.RemovalReason.DISCARDED);
-                livingEntity.getWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
+                livingEntity.getEntityWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
             }
 
             setInHarmony(livingEntity, true);
@@ -329,7 +329,7 @@ public class POUtils {
 
 
     public static void harmonizeEntityByBeacon(LivingEntity livingEntity, @Nullable PlayerEntity playerAttacker, BlockPos beaconPos) {
-        if (livingEntity.getWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
+        if (livingEntity.getEntityWorld() instanceof ServerWorld serverWorld && !Main.CONFIG.enlightenmentBlackList.contains(Registries.ENTITY_TYPE.getId(livingEntity.getType()).toString()) && !Main.CONFIG.enlightenmentBlackList.contains("*")) {
 
             POPlayerConfig playerConfig = getConfigForPlayer(playerAttacker);
 
@@ -367,7 +367,7 @@ public class POUtils {
                 livingEntity.setSilent(true);
                 livingEntity.damage(serverWorld, livingEntity.getDamageSources().outOfWorld(), Float.MAX_VALUE);
                 livingEntity.remove(Entity.RemovalReason.DISCARDED);
-                livingEntity.getWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
+                livingEntity.getEntityWorld().playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(), SoundEvents.ENTITY_EVOKER_PREPARE_SUMMON, SoundCategory.MASTER, 1, 2);
             }
 
             if(Main.CONFIG.convertUponEnlightened.containsKey(entityID)) {
@@ -419,7 +419,7 @@ public class POUtils {
         Optional<RegistryKey<LootTable>> optional = target.getLootTableKey();
         if (optional.isPresent()) {
             LootTable lootTable = world.getServer().getReloadableRegistries().getLootTable(optional.get());
-            LootWorldContext.Builder builder = (new LootWorldContext.Builder(world)).add(LootContextParameters.THIS_ENTITY, target).add(LootContextParameters.ORIGIN, target.getPos()).add(LootContextParameters.DAMAGE_SOURCE, damageSource).addOptional(LootContextParameters.ATTACKING_ENTITY, damageSource.getAttacker()).addOptional(LootContextParameters.DIRECT_ATTACKING_ENTITY, damageSource.getSource());
+            LootWorldContext.Builder builder = (new LootWorldContext.Builder(world)).add(LootContextParameters.THIS_ENTITY, target).add(LootContextParameters.ORIGIN, target.getEntityPos()).add(LootContextParameters.DAMAGE_SOURCE, damageSource).addOptional(LootContextParameters.ATTACKING_ENTITY, damageSource.getAttacker()).addOptional(LootContextParameters.DIRECT_ATTACKING_ENTITY, damageSource.getSource());
             if (playerAttacker != null) {
                 builder = builder.add(LootContextParameters.LAST_DAMAGE_PLAYER, playerAttacker).luck(playerAttacker.getLuck());
             }
@@ -441,16 +441,16 @@ public class POUtils {
     }
 
     public static void spawnEnlightenmentParticlesClient(ClientPlayerEntity player, ClientWorld world) {
-        if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().cameraEntity != player) {
+        if(MinecraftClient.getInstance().gameRenderer.getCamera().isThirdPerson() || MinecraftClient.getInstance().getCameraEntity() != player) {
             world.addParticleClient(ParticleTypes.END_ROD, false, true, player.getParticleX(0.5), player.getRandomBodyY(), player.getParticleZ(0.5), 0, 0, 0);
         }
     }
 
     public static boolean enlightenedPlayerInCreative(PlayerEntity player) {
-        if(!player.getWorld().isClient() && player instanceof ServerPlayerEntity serverPlayer) {
+        if(!player.getEntityWorld().isClient() && player instanceof ServerPlayerEntity serverPlayer) {
             return serverPlayer.interactionManager.isCreative();
         }
-        else if(player.getWorld().isClient() && player instanceof AbstractClientPlayerEntity clientPlayer) {
+        else if(player.getEntityWorld().isClient() && player instanceof AbstractClientPlayerEntity clientPlayer) {
             PlayerListEntry playerListEntry = clientPlayer.getPlayerListEntry();
             return playerListEntry != null && playerListEntry.getGameMode().isCreative();
         }
@@ -516,17 +516,17 @@ public class POUtils {
 
     public static void respawnPlayer(ServerPlayerEntity player) {
         // Sanity check
-        if (!player.getWorld().isClient()) {
+        if (!player.getEntityWorld().isClient()) {
 
-            MinecraftServer server = player.getServer();
+            MinecraftServer server = player.getEntityWorld().getServer();
 
             if (server != null) {
-                ServerWorld world = player.getWorld();
+                ServerWorld world = player.getEntityWorld();
 
                 if (world != null) {
 
                     Optional<Vec3d> finalPos = findRespawnPosition(world, player);
-                    BlockPos fallback = server.getOverworld().getSpawnPos();
+                    BlockPos fallback = server.getSpawnPos().pos();
 
                     player.fallDistance = 0.0F;
                     finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, PositionFlag.ROT, player.getYaw(), player.getPitch(), false), () -> player.teleport(world, fallback.getX(), fallback.getY() + 1, fallback.getZ(), PositionFlag.ROT, player.getYaw(), player.getPitch(), false));

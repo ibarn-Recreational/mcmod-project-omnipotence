@@ -35,18 +35,18 @@ public class ItemMixin {
         ConsumableComponent component = stack.get(DataComponentTypes.CONSUMABLE);
         if(stack.getItem() == Items.BOOK && component != null) {
             NbtComponent nbt = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-            if (nbt.getNbt().getBoolean("isPOTome").orElse(false) && !POUtils.isOmnipotent(user)) {
+            if (nbt.copyNbt().getBoolean("isPOTome").orElse(false) && !POUtils.isOmnipotent(user)) {
                 POUtils.grantOmnipotence(user, false);
                 if(!user.isCreative()) stack.decrement(1);
                 cir.setReturnValue(component.consume(user, stack, hand));
-            } else if (!nbt.getNbt().getBoolean("isPOTome").orElse(false) && POUtils.isOmnipotent(user)) {
+            } else if (!nbt.copyNbt().getBoolean("isPOTome").orElse(false) && POUtils.isOmnipotent(user)) {
 
                 boolean cannotLoseEnlightenment = false;
                 POPlayerConfig config = POUtils.getConfigForPlayer(user);
                 if(config != null) cannotLoseEnlightenment = config.enlightenedOnStart();
 
                 if (cannotLoseEnlightenment) {
-                    if (!world.isClient)
+                    if (!world.isClient())
                         user.sendMessage(Text.translatable("message.projectomnipotence.failed_descend").fillStyle(Style.EMPTY.withColor(Formatting.YELLOW)), false);
                     cir.setReturnValue(ActionResult.FAIL);
                 } else {

@@ -16,7 +16,7 @@ public class POClientPlayNetworkHandler {
             boolean isOmnipotent = payload.isOmnipotent();
             int entitiesEnlightened = payload.entitiesEnlightened();
 
-            if(player.getUuid().equals(profile.getId())) {
+            if(player.getUuid().equals(profile.id())) {
 
                 ((IPOPlayerEntity) player).setOmnipotent(isOmnipotent);
                 ((IPOPlayerEntity) player).setEntitiesEnlightened(entitiesEnlightened);
