@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Item.class)
 public class ItemMixin {
 
-    @Inject(method = "use", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "use", at = @At("HEAD"), cancellable = true)
     public void item$use(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
         ItemStack stack = user.getStackInHand(hand);
         ConsumableComponent component = stack.get(DataComponentTypes.CONSUMABLE);
