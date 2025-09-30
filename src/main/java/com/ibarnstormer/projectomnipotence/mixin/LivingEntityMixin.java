@@ -67,7 +67,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
             if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
                 if (thisEntity.getType() == EntityType.ENDER_DRAGON) {
                     if(playerAttacker instanceof ServerPlayerEntity serverPlayer) Criteria.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, source);
-                    if (thisEntity.getWorld() instanceof ServerWorld serverWorld) {
+                    if (thisEntity.getEntityWorld() instanceof ServerWorld serverWorld) {
                         if(serverWorld.getEnderDragonFight() != null) playerAttacker.addExperience(serverWorld.getEnderDragonFight().toData().previouslyKilled() ? 1000 : 24000);
                         for(ServerPlayerEntity serverPlayer : serverWorld.getPlayers()) {
                             serverWorld.spawnParticles(serverPlayer, ParticleTypes.END_ROD, false, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getLengthY() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
@@ -100,13 +100,13 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
         LivingEntity thisEntity = this.getLivingEntity();
 
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) {
-            if (thisEntity.getWorld() instanceof ServerWorld serverWorld && thisEntity.age % 5 == 0) {
+            if (thisEntity.getEntityWorld() instanceof ServerWorld serverWorld && thisEntity.age % 5 == 0) {
                 POUtils.spawnEnlightenmentParticles(thisEntity, serverWorld);
             }
             thisEntity.disableExperienceDropping();
             if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
                 thisEntity.setVelocity(thisEntity.getVelocity().x, 2.0D, thisEntity.getVelocity().z);
-                if(thisEntity.getY() > thisEntity.getWorld().getHeight() && thisEntity.getWorld() instanceof ServerWorld serverWorld) {
+                if(thisEntity.getY() > thisEntity.getEntityWorld().getHeight() && thisEntity.getEntityWorld() instanceof ServerWorld serverWorld) {
                     serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.BLOCK_END_PORTAL_SPAWN, SoundCategory.MASTER, 500, 1);
                     thisEntity.kill(serverWorld);
                 }

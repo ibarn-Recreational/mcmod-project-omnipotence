@@ -87,13 +87,10 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
         PlayerEntity player = this.getPlayer();
         if (POUtils.isOmnipotent(player)) {
             if(source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY) && !world.isClient() && !player.getAbilities().allowFlying && player.getY() <= world.getBottomY()) {
-                MinecraftServer server = player.getServer();
-                if(server != null) {
-                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1);
-                    POUtils.respawnPlayer((ServerPlayerEntity) player);
-                    world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1);
-                    cir.setReturnValue(false);
-                }
+                world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1);
+                POUtils.respawnPlayer((ServerPlayerEntity) player);
+                world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1);
+                cir.setReturnValue(false);
             }
 
             if(POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) cir.setReturnValue(false);
@@ -126,7 +123,7 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
             List<LivingEntity> list;
 
             if(f > 0) {
-                list = player.getWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
+                list = player.getEntityWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
                 player.spawnSweepAttackParticles();
             }
             else if (target instanceof LivingEntity le) list = List.of(le);
@@ -142,7 +139,7 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
     @Inject(method = "tick", at = @At("TAIL"))
     public void playerEntity$tick(CallbackInfo ci) {
         PlayerEntity player = this.getPlayer();
-        World world = player.getWorld();
+        World world = player.getEntityWorld();
         if(world instanceof ServerWorld serverWorld) {
 
             POPlayerConfig config = POUtils.getConfigForPlayer(player);
