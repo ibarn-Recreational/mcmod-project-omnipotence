@@ -25,6 +25,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.MinecraftServer;
@@ -38,6 +39,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -124,7 +126,11 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
 
             if(f > 0) {
                 list = player.getEntityWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
-                player.spawnSweepAttackParticles();
+                if(player.getEntityWorld() instanceof ServerWorld serverWorld) {
+                    double d = -MathHelper.sin(player.getYaw() * 0.017453292F);
+                    double e = MathHelper.cos(player.getYaw() * 0.017453292F);
+                    serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, player.getX() + d, player.getBodyY(0.5), player.getZ() + e, 0, d, 0.0, e, 0.0);
+                }
             }
             else if (target instanceof LivingEntity le) list = List.of(le);
             else list = new ArrayList<>();

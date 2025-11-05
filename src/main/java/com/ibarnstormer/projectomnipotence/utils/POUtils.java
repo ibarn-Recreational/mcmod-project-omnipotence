@@ -526,7 +526,7 @@ public class POUtils {
                 if (world != null) {
 
                     Optional<Vec3d> finalPos = findRespawnPosition(world, player);
-                    BlockPos fallback = server.getSpawnPos().pos();
+                    BlockPos fallback = world.getSpawnPoint().getPos();
 
                     player.fallDistance = 0.0F;
                     finalPos.ifPresentOrElse(vec3d -> player.teleport(world, vec3d.x, vec3d.y, vec3d.z, PositionFlag.ROT, player.getYaw(), player.getPitch(), false), () -> player.teleport(world, fallback.getX(), fallback.getY() + 1, fallback.getZ(), PositionFlag.ROT, player.getYaw(), player.getPitch(), false));
