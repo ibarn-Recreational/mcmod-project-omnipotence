@@ -1,6 +1,5 @@
 package com.ibarnstormer.projectomnipotence.mixin;
 
-import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -8,7 +7,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.DefaultPermissions;
 import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.permission.PermissionCheck;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -34,17 +35,20 @@ public abstract class CommandManagerMixin {
     @Final
     private CommandDispatcher<ServerCommandSource> dispatcher;
 
+    @Unique
+    private static final PermissionCheck PERMISSION_CHECK = new PermissionCheck.Require(DefaultPermissions.GAMEMASTERS);
+
     @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/brigadier/CommandDispatcher;setConsumer(Lcom/mojang/brigadier/ResultConsumer;)V"), method = "<init>")
     private void commandManager$init(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess registryAccess, CallbackInfo ci) {
         this.dispatcher.register(literal("projectOmnipotence")
                 .then(literal("checkEntitiesEnlightened")
                         .executes(this::getEEStatistics))
                 .then(literal("clearEnlightened")
-                        .requires(source -> source.hasPermissionLevel(2))
+                        .requires(CommandManager.requirePermissionLevel(PERMISSION_CHECK))
                         .then(argument("target", EntityArgumentType.entity())
                             .executes(this::clearEnlightened)))
                 .then(literal("entitiesEnlightened")
-                        .requires(source -> source.hasPermissionLevel(2))
+                        .requires(CommandManager.requirePermissionLevel(PERMISSION_CHECK))
                         .then(literal("get")
                                 .then(argument("target", EntityArgumentType.player())
                                     .executes(this::outputEntitiesEnlightened)))
@@ -53,7 +57,7 @@ public abstract class CommandManagerMixin {
                             .then(argument("amount", IntegerArgumentType.integer())
                                 .executes(this::setEntitiesEnlightened)))))
                 .then(literal("setEnlightened")
-                        .requires(source -> source.hasPermissionLevel(2))
+                        .requires(CommandManager.requirePermissionLevel(PERMISSION_CHECK))
                         .then(argument("target", EntityArgumentType.entity())
                             .executes(this::setEnlightened))));
     }

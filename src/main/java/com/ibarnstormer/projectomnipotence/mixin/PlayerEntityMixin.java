@@ -5,29 +5,22 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.config.POPlayerConfig;
 import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
-import com.ibarnstormer.projectomnipotence.utils.POEntityConversionHelper;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.conversion.EntityConversionContext;
-import net.minecraft.entity.conversion.EntityConversionType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -38,6 +31,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -124,7 +118,11 @@ public abstract class PlayerEntityMixin extends EntityMixin implements IPOPlayer
 
             if(f > 0) {
                 list = player.getEntityWorld().getNonSpectatingEntities(LivingEntity.class, target.getBoundingBox().expand(1.0D, 0.25D, 1.0D));
-                player.spawnSweepAttackParticles();
+                if(player.getEntityWorld() instanceof ServerWorld serverWorld) {
+                    double d = -MathHelper.sin(player.getYaw() * 0.017453292F);
+                    double e = MathHelper.cos(player.getYaw() * 0.017453292F);
+                    serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, player.getX() + d, player.getBodyY(0.5), player.getZ() + e, 0, d, 0.0, e, 0.0);
+                }
             }
             else if (target instanceof LivingEntity le) list = List.of(le);
             else list = new ArrayList<>();

@@ -10,8 +10,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.storage.ReadView;
 import net.minecraft.storage.WriteView;
