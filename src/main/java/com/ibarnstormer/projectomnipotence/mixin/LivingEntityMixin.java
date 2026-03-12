@@ -3,20 +3,20 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.IHarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
-import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.effect.StatusEffectCategory;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
+import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,42 +35,42 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
         return (LivingEntity) (Object) this;
     }
 
-    @Inject(method = "readCustomData", at = @At("TAIL"))
-    public void livingEntity$readCustomData(ReadView view, CallbackInfo ci) {
+    @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
+    public void livingEntity$readCustomData(ValueInput view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
             POUtils.readNonPlayerData(thisEntity, view);
         }
     }
 
-    @Inject(method = "writeCustomData", at = @At("TAIL"))
-    public void livingEntity$writeCustomData(WriteView view, CallbackInfo ci) {
+    @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
+    public void livingEntity$writeCustomData(ValueOutput view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(thisEntity.getType() != EntityType.PLAYER) {
             POUtils.writeNonPlayerData(thisEntity, view);
         }
     }
 
-    @Inject(method = "canTarget(Lnet/minecraft/entity/LivingEntity;)Z", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "canAttack(Lnet/minecraft/world/entity/LivingEntity;)Z", at = @At("RETURN"), cancellable = true)
     public void livingEntity$canTarget(LivingEntity target, CallbackInfoReturnable<Boolean> cir) {
-        if (target instanceof PlayerEntity player && POUtils.isOmnipotent(player)) {
+        if (target instanceof Player player && POUtils.isOmnipotent(player)) {
             cir.setReturnValue(false);
         }
         else if (POUtils.isInHarmony(target)) cir.setReturnValue(false);
     }
 
-    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    public void livingEntity$damage(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$damage(ServerLevel world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = this.getLivingEntity();
 
-        if(source.getAttacker() instanceof PlayerEntity playerAttacker) {
+        if(source.getEntity() instanceof Player playerAttacker) {
             if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
                 if (thisEntity.getType() == EntityType.ENDER_DRAGON) {
-                    if(playerAttacker instanceof ServerPlayerEntity serverPlayer) Criteria.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, source);
-                    if (thisEntity.getEntityWorld() instanceof ServerWorld serverWorld) {
-                        if(serverWorld.getEnderDragonFight() != null) playerAttacker.addExperience(serverWorld.getEnderDragonFight().toData().previouslyKilled() ? 1000 : 24000);
-                        for(ServerPlayerEntity serverPlayer : serverWorld.getPlayers()) {
-                            serverWorld.spawnParticles(serverPlayer, ParticleTypes.END_ROD, false, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getLengthY() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
+                    if(playerAttacker instanceof ServerPlayer serverPlayer) CriteriaTriggers.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, source);
+                    if (thisEntity.level() instanceof ServerLevel serverWorld) {
+                        if(serverWorld.getDragonFight() != null) playerAttacker.giveExperiencePoints(serverWorld.getDragonFight().hasPreviouslyKilledDragon() ? 1000 : 24000);
+                        for(ServerPlayer serverPlayer : serverWorld.players()) {
+                            serverWorld.sendParticles(serverPlayer, ParticleTypes.END_ROD, false, true, thisEntity.getX(), thisEntity.getY() + thisEntity.getBoundingBox().getYsize() / 2, thisEntity.getZ(), 50, Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5, 0.5);
                         }
                     }
                 }
@@ -88,7 +88,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     public void livingEntity$setHealth(float health, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity instanceof PlayerEntity player) {
+        if(thisEntity instanceof Player player) {
             if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
                 ci.cancel();
             }
@@ -100,38 +100,38 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
         LivingEntity thisEntity = this.getLivingEntity();
 
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) {
-            if (thisEntity.getEntityWorld() instanceof ServerWorld serverWorld && thisEntity.age % 5 == 0) {
+            if (thisEntity.level() instanceof ServerLevel serverWorld && thisEntity.tickCount % 5 == 0) {
                 POUtils.spawnEnlightenmentParticles(thisEntity, serverWorld);
             }
-            thisEntity.disableExperienceDropping();
+            thisEntity.skipDropExperience();
             if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
-                thisEntity.setVelocity(thisEntity.getVelocity().x, 2.0D, thisEntity.getVelocity().z);
-                if(thisEntity.getY() > thisEntity.getEntityWorld().getHeight() && thisEntity.getEntityWorld() instanceof ServerWorld serverWorld) {
-                    serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.BLOCK_END_PORTAL_SPAWN, SoundCategory.MASTER, 500, 1);
+                thisEntity.setDeltaMovement(thisEntity.getDeltaMovement().x, 2.0D, thisEntity.getDeltaMovement().z);
+                if(thisEntity.getY() > thisEntity.level().getHeight() && thisEntity.level() instanceof ServerLevel serverWorld) {
+                    serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.END_PORTAL_SPAWN, SoundSource.MASTER, 500, 1);
                     thisEntity.kill(serverWorld);
                 }
             }
         }
     }
 
-    @Inject(method = "drop", at = @At("HEAD"), cancellable = true)
-    public void livingEntity$drop(ServerWorld world, DamageSource damageSource, CallbackInfo ci) {
+    @Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$drop(ServerLevel world, DamageSource damageSource, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) ci.cancel();
     }
 
-    @Inject(method = "isDead", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "isDeadOrDying", at = @At("RETURN"), cancellable = true)
     public void livingEntity$isDead(CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
+        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             cir.setReturnValue(false);
         }
     }
 
-    @Inject(method = "canHaveStatusEffect", at = @At("HEAD"), cancellable = true)
-    public void livingEntity$canHaveStatusEffect(StatusEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "canBeAffected", at = @At("HEAD"), cancellable = true)
+    public void livingEntity$canHaveStatusEffect(MobEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity instanceof PlayerEntity player && POUtils.isOmnipotent(player) && effect.getEffectType().value().getCategory() == StatusEffectCategory.HARMFUL) {
+        if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
             cir.setReturnValue(false);
         }
     }

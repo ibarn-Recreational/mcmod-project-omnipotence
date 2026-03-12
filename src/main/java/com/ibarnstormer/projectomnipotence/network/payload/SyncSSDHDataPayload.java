@@ -2,23 +2,23 @@ package com.ibarnstormer.projectomnipotence.network.payload;
 
 import com.ibarnstormer.projectomnipotence.Main;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 
-public record SyncSSDHDataPayload(GameProfile profile, boolean isOmnipotent, int entitiesEnlightened) implements CustomPayload {
-    public static final CustomPayload.Id<SyncSSDHDataPayload> ID = new CustomPayload.Id<>(Identifier.of(Main.MODID, "sync_serverside_data"));
-    public static final PacketCodec<PacketByteBuf, SyncSSDHDataPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.GAME_PROFILE, SyncSSDHDataPayload::profile,
-            PacketCodecs.BOOLEAN, SyncSSDHDataPayload::isOmnipotent,
-            PacketCodecs.INTEGER, SyncSSDHDataPayload::entitiesEnlightened,
+public record SyncSSDHDataPayload(GameProfile profile, boolean isOmnipotent, int entitiesEnlightened) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<SyncSSDHDataPayload> ID = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(Main.MODID, "sync_serverside_data"));
+    public static final StreamCodec<FriendlyByteBuf, SyncSSDHDataPayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.GAME_PROFILE, SyncSSDHDataPayload::profile,
+            ByteBufCodecs.BOOL, SyncSSDHDataPayload::isOmnipotent,
+            ByteBufCodecs.INT, SyncSSDHDataPayload::entitiesEnlightened,
             SyncSSDHDataPayload::new
     );
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

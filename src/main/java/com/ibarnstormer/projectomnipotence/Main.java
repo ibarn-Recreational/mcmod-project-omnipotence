@@ -19,10 +19,11 @@ public class Main implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Thank you for installing Project Omnipotence, enjoy!");
 
-		POCreativeTab.init();
+		// Can no longer insert custom vanilla items into creative tabs before they are registered
+		// POCreativeTab.init();
 
 		// Network Payload registry
-		PayloadTypeRegistry.playS2C().register(SyncSSDHDataPayload.ID, SyncSSDHDataPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(SyncSSDHDataPayload.ID, SyncSSDHDataPayload.CODEC);
 
 		// Check config values
 		if(CONFIG.luckLevelEntityGoal <= 0) {

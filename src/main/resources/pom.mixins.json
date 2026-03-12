@@ -4,32 +4,32 @@
   "package": "com.ibarnstormer.projectomnipotence.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "AngerableMixin",
-    "ApplyBonusLootFunctionMixin",
+    "NeutralMobMixin",
+    "ApplyBonusCountMixin",
     "BeaconBlockEntityMixin",
     "BlockItemMixin",
     "BrainMixin",
     "BucketableMixin",
-    "CommandManagerMixin",
+    "CommandsMixin",
     "EnchantmentHelperMixin",
-    "EntityBucketItemMixin",
+    "MobBucketItemMixin",
     "EntityMixin",
-    "FleeEntityGoalMixin",
+    "AvoidEntityGoalMixin",
     "ItemMixin",
     "KillCommandMixin",
     "LivingEntityMixin",
-    "MobEntityMixin",
-    "PlayerEntityMixin",
-    "ServerPlayerEntityMixin",
+    "MobMixin",
+    "PlayerMixin",
+    "ServerPlayerMixin",
     "ServerPlayerInteractionManagerMixin",
-    "TrialSpawnerLogicMixin",
-    "VillagerEntityMixin"
+    "TrialSpawnerMixin",
+    "VillagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "client": [
-    "ClientPlayerEntityMixin",
-    "InGameHudMixin"
+    "LocalPlayerMixin",
+    "GuiMixin"
   ]
 }
