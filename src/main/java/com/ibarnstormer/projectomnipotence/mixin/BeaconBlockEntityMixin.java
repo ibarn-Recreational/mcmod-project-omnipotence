@@ -2,21 +2,6 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BeaconBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.Uuids;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -26,6 +11,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BeaconBlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
 
 @Mixin(BeaconBlockEntity.class)
 public abstract class BeaconBlockEntityMixin extends BlockEntity implements EnlighteningBeacon {
@@ -41,34 +41,34 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
         super(type, pos, state);
     }
 
-    @Inject(method = "readData", at = @At("TAIL"))
-    private void beaconBlockEntity$readData(ReadView view, CallbackInfo ci) {
+    @Inject(method = "loadAdditional", at = @At("TAIL"))
+    private void beaconBlockEntity$readData(ValueInput view, CallbackInfo ci) {
         try {
-            this.isEnlightening = view.getBoolean("isEnlightening", false);
-            view.read("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC);
-            this.cachedEnlightenedAmount = view.getInt("cachedEnlightenedAmount", 0);
+            this.isEnlightening = view.getBooleanOr("isEnlightening", false);
+            view.read("omnipotentOwnerUUID", UUIDUtil.CODEC);
+            this.cachedEnlightenedAmount = view.getIntOr("cachedEnlightenedAmount", 0);
         }
         catch(Exception ignored){}
     }
 
-    @Inject(method = "writeData", at = @At("TAIL"))
-    private void beaconBlockEntity$writeData(WriteView view, CallbackInfo ci) {
+    @Inject(method = "saveAdditional", at = @At("TAIL"))
+    private void beaconBlockEntity$writeData(ValueOutput view, CallbackInfo ci) {
         try {
             view.putBoolean("isEnlightening", this.isEnlightening);
-            view.put("omnipotentOwnerUUID", Uuids.INT_STREAM_CODEC, this.omnipotentOwner);
+            view.store("omnipotentOwnerUUID", UUIDUtil.CODEC, this.omnipotentOwner);
             view.putInt("cachedEnlightenedAmount", this.cachedEnlightenedAmount);
         }
         catch(Exception ignored){}
     }
 
-    @Inject(method = "applyPlayerEffects", at = @At(value = "HEAD"))
-    private static void beaconBlockEntity$applyPlayerEffects(World world, BlockPos pos, int beaconLevel, @Nullable RegistryEntry<StatusEffect> primaryEffect, @Nullable RegistryEntry<StatusEffect> secondaryEffect, CallbackInfo ci) {
+    @Inject(method = "applyEffects", at = @At(value = "HEAD"))
+    private static void beaconBlockEntity$applyPlayerEffects(Level world, BlockPos pos, int beaconLevel, @Nullable Holder<MobEffect> primaryEffect, @Nullable Holder<MobEffect> secondaryEffect, CallbackInfo ci) {
         if(world.getBlockEntity(pos) instanceof BeaconBlockEntity beacon && ((EnlighteningBeacon) beacon).isEnlightening()) {
             double d = beaconLevel * 10 + 10;
-            Box box = new Box(pos).expand(d).stretch(0.0, world.getHeight(), 0.0);
+            AABB box = new AABB(pos).inflate(d).expandTowards(0.0, world.getHeight(), 0.0);
 
-            PlayerEntity player = ((EnlighteningBeacon) beacon).getOmnipotentOwner();
-            List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, box, e -> e.getType() != EntityType.PLAYER && !POUtils.isInHarmony(e));
+            Player player = ((EnlighteningBeacon) beacon).getOmnipotentOwner();
+            List<LivingEntity> entities = world.getEntitiesOfClass(LivingEntity.class, box, e -> e.getType() != EntityType.PLAYER && !POUtils.isInHarmony(e));
 
             for(LivingEntity entity : entities) POUtils.harmonizeEntityByBeacon(entity, player, pos);
 
@@ -86,9 +86,9 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
     }
 
     @Override
-    public @Nullable PlayerEntity getOmnipotentOwner() {
-        if(this.world != null && omnipotentOwner != null)
-            return this.world.getPlayerByUuid(omnipotentOwner);
+    public @Nullable Player getOmnipotentOwner() {
+        if(this.level != null && omnipotentOwner != null)
+            return this.level.getPlayerByUUID(omnipotentOwner);
         else return null;
     }
 
@@ -98,9 +98,9 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
     }
 
     @Override
-    public void setAsEnlightening(@Nullable PlayerEntity player) {
+    public void setAsEnlightening(@Nullable Player player) {
         this.isEnlightening = true;
-        this.omnipotentOwner = player != null ? player.getUuid() : new UUID(0L, 0L);
+        this.omnipotentOwner = player != null ? player.getUUID() : new UUID(0L, 0L);
         this.cachedEnlightenedAmount = 0;
     }
 

@@ -1,56 +1,52 @@
 package com.ibarnstormer.projectomnipotence.utils;
 
 import com.ibarnstormer.projectomnipotence.Main;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ConsumableComponent;
-import net.minecraft.component.type.NbtComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.consume.ConsumeEffect;
-import net.minecraft.item.consume.UseAction;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Rarity;
+import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
+import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.item.*;
+import net.minecraft.world.item.component.Consumable;
+import net.minecraft.world.item.component.CustomData;
 
 public class POCreativeTab {
 
     public static final ItemStack TOME_OF_TRUTH, TOME_OF_LIES;
 
     public static void init() {
-        Registry.register(Registries.ITEM_GROUP, Identifier.of(Main.MODID, "tab"), FabricItemGroup.builder()
+        Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, Identifier.fromNamespaceAndPath(Main.MODID, "tab"), FabricCreativeModeTab.builder()
                 .icon(() -> TOME_OF_TRUTH)
-                .displayName(Text.translatable("itemGroup.projectomnipotence.tab"))
-                .entries((ctx, entries) -> {
-                    entries.add(TOME_OF_TRUTH);
-                    entries.add(TOME_OF_LIES);
+                .title(Component.translatable("itemGroup.projectomnipotence.tab"))
+                .displayItems((ctx, entries) -> {
+                    entries.accept(TOME_OF_TRUTH);
+                    entries.accept(TOME_OF_LIES);
                 }).build());
     }
 
     static {
         TOME_OF_TRUTH = new ItemStack(Items.BOOK);
 
-        NbtComponent totNbt = TOME_OF_TRUTH.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-        totNbt = totNbt.apply(nbt -> nbt.putBoolean("isPOTome", true));
-        TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_DATA, totNbt);
-        TOME_OF_TRUTH.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-        TOME_OF_TRUTH.set(DataComponentTypes.RARITY, Rarity.EPIC);
-        TOME_OF_TRUTH.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_truth").fillStyle(Style.EMPTY.withItalic(false)));
-        TOME_OF_TRUTH.set(DataComponentTypes.CONSUMABLE, ConsumableComponent.builder().consumeSeconds(0).consumeParticles(false).sound(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM).useAction(UseAction.NONE).build());
+        CustomData totNbt = TOME_OF_TRUTH.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        totNbt = totNbt.update(nbt -> nbt.putBoolean("isPOTome", true));
+        TOME_OF_TRUTH.set(DataComponents.CUSTOM_DATA, totNbt);
+        TOME_OF_TRUTH.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        TOME_OF_TRUTH.set(DataComponents.RARITY, Rarity.EPIC);
+        TOME_OF_TRUTH.set(DataComponents.CUSTOM_NAME, Component.translatable("item.projectomnipotence.tome_of_truth").withStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_TRUTH.set(DataComponents.CONSUMABLE, Consumable.builder().consumeSeconds(0).hasConsumeParticles(false).sound(SoundEvents.NOTE_BLOCK_BASEDRUM).animation(ItemUseAnimation.NONE).build());
 
         TOME_OF_LIES = new ItemStack(Items.BOOK);
 
-        NbtComponent tolNbt = TOME_OF_LIES.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
-        tolNbt = tolNbt.apply(nbt -> nbt.putBoolean("isPOTome", false));
-        TOME_OF_LIES.set(DataComponentTypes.CUSTOM_DATA, tolNbt);
-        TOME_OF_LIES.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-        TOME_OF_LIES.set(DataComponentTypes.RARITY, Rarity.EPIC);
-        TOME_OF_LIES.set(DataComponentTypes.CUSTOM_NAME, Text.translatable("item.projectomnipotence.tome_of_lies").fillStyle(Style.EMPTY.withItalic(false)));
-        TOME_OF_LIES.set(DataComponentTypes.CONSUMABLE, ConsumableComponent.builder().consumeSeconds(0).consumeParticles(false).sound(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM).useAction(UseAction.NONE).build());
+        CustomData tolNbt = TOME_OF_LIES.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        tolNbt = tolNbt.update(nbt -> nbt.putBoolean("isPOTome", false));
+        TOME_OF_LIES.set(DataComponents.CUSTOM_DATA, tolNbt);
+        TOME_OF_LIES.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+        TOME_OF_LIES.set(DataComponents.RARITY, Rarity.EPIC);
+        TOME_OF_LIES.set(DataComponents.CUSTOM_NAME, Component.translatable("item.projectomnipotence.tome_of_lies").withStyle(Style.EMPTY.withItalic(false)));
+        TOME_OF_LIES.set(DataComponents.CONSUMABLE, Consumable.builder().consumeSeconds(0).hasConsumeParticles(false).sound(SoundEvents.NOTE_BLOCK_BASEDRUM).animation(ItemUseAnimation.NONE).build());
 
     }
 

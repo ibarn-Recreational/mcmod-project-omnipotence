@@ -1,11 +1,9 @@
-accessWidener v2 named
+accessWidener v2 official
 
-accessible method net/minecraft/client/network/AbstractClientPlayerEntity getPlayerListEntry ()Lnet/minecraft/client/network/PlayerListEntry;
-accessible field net/minecraft/entity/Entity dataTracker Lnet/minecraft/entity/data/DataTracker;
-accessible field net/minecraft/entity/LivingEntity HEALTH Lnet/minecraft/entity/data/TrackedData;
-accessible method net/minecraft/entity/LivingEntity dropExperience (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/Entity;)V
-accessible method net/minecraft/entity/LivingEntity dropLoot (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
-accessible method net/minecraft/entity/LivingEntity dropEquipment (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
-accessible field net/minecraft/entity/mob/MobEntity targetSelector Lnet/minecraft/entity/ai/goal/GoalSelector;
-accessible method net/minecraft/entity/mob/MobEntity dropLoot (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
-accessible method net/minecraft/entity/mob/MobEntity dropEquipment (Lnet/minecraft/server/world/ServerWorld;Lnet/minecraft/entity/damage/DamageSource;Z)V
+accessible method net/minecraft/world/entity/LivingEntity dropFromLootTable (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V
+accessible method net/minecraft/world/entity/Mob dropFromLootTable (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V
+accessible method net/minecraft/world/entity/LivingEntity dropCustomDeathLoot (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;Z)V
+accessible method net/minecraft/world/entity/LivingEntity dropExperience (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;)V
+accessible field net/minecraft/world/entity/Mob targetSelector Lnet/minecraft/world/entity/ai/goal/GoalSelector;
+accessible method net/minecraft/client/player/AbstractClientPlayer getPlayerInfo ()Lnet/minecraft/client/multiplayer/PlayerInfo;
+accessible field net/minecraft/world/entity/LivingEntity DATA_HEALTH_ID Lnet/minecraft/network/syncher/EntityDataAccessor;
