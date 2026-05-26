@@ -9,7 +9,7 @@ import com.ibarnstormer.projectomnipotence.entity.IPOPlayerEntity;
 import com.ibarnstormer.projectomnipotence.network.payload.SyncSSDHDataPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -31,15 +31,7 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.ConversionParams;
-import net.minecraft.world.entity.ConversionType;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
@@ -97,8 +89,8 @@ public class POUtils {
         finalizers = new HashMap<>();
 
         // Zombie Villager to Villager
-        addConversionFinalizer(EntityType.ZOMBIE_VILLAGER, new POEntityConversionHelper<>(EntityType.VILLAGER, (source, converter) -> {
-            if (source.getType() == EntityType.ZOMBIE_VILLAGER) {
+        addConversionFinalizer(EntityTypes.ZOMBIE_VILLAGER, new POEntityConversionHelper<>(EntityTypes.VILLAGER, (source, converter) -> {
+            if (source.getType() == EntityTypes.ZOMBIE_VILLAGER) {
 
                 return (villager) -> {
                     Level world = villager.level();
@@ -140,8 +132,8 @@ public class POUtils {
         }));
 
         // Zombified Piglin -> Piglin
-        addConversionFinalizer(EntityType.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<>(EntityType.PIGLIN, (source, converter) -> {
-            if (source.getType() == EntityType.ZOMBIFIED_PIGLIN) {
+        addConversionFinalizer(EntityTypes.ZOMBIFIED_PIGLIN, new POEntityConversionHelper<>(EntityTypes.PIGLIN, (source, converter) -> {
+            if (source.getType() == EntityTypes.ZOMBIFIED_PIGLIN) {
                 return (piglin) -> {
                     for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                         piglin.setItemSlot(slot, ItemStack.EMPTY);
@@ -269,12 +261,12 @@ public class POUtils {
     }
 
     private static void handleCustomDrops(LivingEntity livingEntity, @Nullable Player playerAttacker, ServerLevel serverWorld) {
-        if(livingEntity.getType() == EntityType.CREEPER && playerAttacker != null) {
+        if(livingEntity.getType() == EntityTypes.CREEPER && playerAttacker != null) {
             int chance = livingEntity.getRandom().nextIntBetweenInclusive(0, Math.max(0, 10 - (int)playerAttacker.getAttributes().getValue(Attributes.LUCK) * 2));
             if(chance == 0) livingEntity.spawnAtLocation(serverWorld, new ItemStack(discs.get(livingEntity.getRandom().nextIntBetweenInclusive(0, discs.size() - 1))));
         }
 
-        if(livingEntity.getType() == EntityType.GOAT && playerAttacker != null) {
+        if(livingEntity.getType() == EntityTypes.GOAT && playerAttacker != null) {
             int chance = livingEntity.getRandom().nextIntBetweenInclusive(0, Math.max(0, 8 - (int)playerAttacker.getAttributes().getValue(Attributes.LUCK) * 2));
             if(chance == 0) {
                 ItemStack goatHorn = new ItemStack(Items.GOAT_HORN);
@@ -290,7 +282,7 @@ public class POUtils {
             }
         }
 
-        if(livingEntity.getType() == EntityType.GHAST && playerAttacker != null) {
+        if(livingEntity.getType() == EntityTypes.GHAST && playerAttacker != null) {
             int chance = livingEntity.getRandom().nextIntBetweenInclusive(0, Math.max(0, 5 - (int)playerAttacker.getAttributes().getValue(Attributes.LUCK)));
             if(chance == 0) livingEntity.spawnAtLocation(serverWorld, new ItemStack(Items.MUSIC_DISC_TEARS));
         }
@@ -419,7 +411,7 @@ public class POUtils {
     }
 
     public static void setInHarmony(LivingEntity entity, boolean value) {
-        if(entity.getType() != EntityType.PLAYER) {
+        if(entity.getType() != EntityTypes.PLAYER) {
             ((IHarmonicEntity) entity).setInHarmony(value);
         }
     }
@@ -450,7 +442,7 @@ public class POUtils {
     }
 
     public static void spawnEnlightenmentParticlesClient(LocalPlayer player, ClientLevel world) {
-        if(Minecraft.getInstance().gameRenderer.getMainCamera().isDetached() || Minecraft.getInstance().getCameraEntity() != player) {
+        if(Minecraft.getInstance().gameRenderer.mainCamera().isDetached() || Minecraft.getInstance().getCameraEntity() != player) {
             world.addParticle(ParticleTypes.END_ROD, false, true, player.getRandomX(0.5), player.getRandomY(), player.getRandomZ(0.5), 0, 0, 0);
         }
     }
@@ -471,7 +463,7 @@ public class POUtils {
     }
 
     public static void forceDropEquipment(LivingEntity entity, Level world, Consumer<ItemStack> callback) {
-        if(world instanceof ServerLevel serverWorld && entity.getType() != EntityType.PLAYER) {
+        if(world instanceof ServerLevel serverWorld && entity.getType() != EntityTypes.PLAYER) {
             if(entity instanceof Mob mob) {
                 for (EquipmentSlot slot : EquipmentSlot.VALUES) {
                     ItemStack stack = mob.getItemBySlot(slot);
@@ -630,7 +622,7 @@ public class POUtils {
         ChunkAccess chunk = world.getChunk(Mth.floor(best.x / 16.0), Mth.floor(best.z / 16.0));
         chunk.findBlocks(BlockBehaviour.BlockStateBase::isSolid, (pos, state) -> {
             if(!foundSolid.get()) {
-                vec3d1.set(pos.getCenter());
+                vec3d1.set(new Vec3(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5));
                 foundSolid.set(true);
             }
         });

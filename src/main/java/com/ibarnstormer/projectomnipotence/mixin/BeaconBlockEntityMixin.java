@@ -2,6 +2,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 
 import com.ibarnstormer.projectomnipotence.block.entity.EnlighteningBeacon;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
+import net.minecraft.world.entity.EntityTypes;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -68,7 +69,7 @@ public abstract class BeaconBlockEntityMixin extends BlockEntity implements Enli
             AABB box = new AABB(pos).inflate(d).expandTowards(0.0, world.getHeight(), 0.0);
 
             Player player = ((EnlighteningBeacon) beacon).getOmnipotentOwner();
-            List<LivingEntity> entities = world.getEntitiesOfClass(LivingEntity.class, box, e -> e.getType() != EntityType.PLAYER && !POUtils.isInHarmony(e));
+            List<LivingEntity> entities = world.getEntitiesOfClass(LivingEntity.class, box, e -> e.getType() != EntityTypes.PLAYER && !POUtils.isInHarmony(e));
 
             for(LivingEntity entity : entities) POUtils.harmonizeEntityByBeacon(entity, player, pos);
 

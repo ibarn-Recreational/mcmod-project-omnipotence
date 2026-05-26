@@ -3,7 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;

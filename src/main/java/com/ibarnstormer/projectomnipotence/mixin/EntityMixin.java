@@ -4,6 +4,7 @@ import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
@@ -43,7 +44,7 @@ public abstract class EntityMixin {
     @Inject(method = "deflection", at = @At("RETURN"), cancellable = true)
     public void entity$getProjectileDeflection(Projectile projectile, CallbackInfoReturnable<ProjectileDeflection> cir) {
         Entity thisEntity = this.getEntity();
-        if(this.getType() == EntityType.PLAYER && POUtils.isInHarmony(thisEntity)) {
+        if(this.getType() == EntityTypes.PLAYER && POUtils.isInHarmony(thisEntity)) {
             cir.setReturnValue(POUtils.OMNIPOTENT_PROJECTILE_DEFLECTOR);
         }
     }

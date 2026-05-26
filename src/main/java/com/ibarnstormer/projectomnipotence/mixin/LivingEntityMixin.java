@@ -3,7 +3,7 @@ package com.ibarnstormer.projectomnipotence.mixin;
 import com.ibarnstormer.projectomnipotence.Main;
 import com.ibarnstormer.projectomnipotence.entity.IHarmonicEntity;
 import com.ibarnstormer.projectomnipotence.utils.POUtils;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +13,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.ValueInput;
@@ -38,7 +39,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     public void livingEntity$readCustomData(ValueInput view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity.getType() != EntityType.PLAYER) {
+        if(thisEntity.getType() != EntityTypes.PLAYER) {
             POUtils.readNonPlayerData(thisEntity, view);
         }
     }
@@ -46,7 +47,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
     public void livingEntity$writeCustomData(ValueOutput view, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(thisEntity.getType() != EntityType.PLAYER) {
+        if(thisEntity.getType() != EntityTypes.PLAYER) {
             POUtils.writeNonPlayerData(thisEntity, view);
         }
     }
@@ -64,8 +65,8 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
         LivingEntity thisEntity = this.getLivingEntity();
 
         if(source.getEntity() instanceof Player playerAttacker) {
-            if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityType.PLAYER) {
-                if (thisEntity.getType() == EntityType.ENDER_DRAGON) {
+            if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityTypes.PLAYER) {
+                if (thisEntity.getType() == EntityTypes.ENDER_DRAGON) {
                     if(playerAttacker instanceof ServerPlayer serverPlayer) CriteriaTriggers.PLAYER_KILLED_ENTITY.trigger(serverPlayer, thisEntity, source);
                     if (thisEntity.level() instanceof ServerLevel serverWorld) {
                         if(serverWorld.getDragonFight() != null) playerAttacker.giveExperiencePoints(serverWorld.getDragonFight().hasPreviouslyKilledDragon() ? 1000 : 24000);
@@ -79,7 +80,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
                 }
                 cir.setReturnValue(false);
             }
-            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityType.PLAYER && !POUtils.enlightenedPlayerInCreative(playerAttacker)) {
+            if(POUtils.isOmnipotent(playerAttacker) && thisEntity.getType() == EntityTypes.PLAYER && !POUtils.enlightenedPlayerInCreative(playerAttacker)) {
                 cir.setReturnValue(false);
             }
         }
@@ -99,12 +100,12 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     public void livingEntity$tick(CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
 
-        if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) {
+        if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityTypes.PLAYER) {
             if (thisEntity.level() instanceof ServerLevel serverWorld && thisEntity.tickCount % 5 == 0) {
                 POUtils.spawnEnlightenmentParticles(thisEntity, serverWorld);
             }
             thisEntity.skipDropExperience();
-            if(thisEntity.getType() == EntityType.ENDER_DRAGON) {
+            if(thisEntity.getType() == EntityTypes.ENDER_DRAGON) {
                 thisEntity.setDeltaMovement(thisEntity.getDeltaMovement().x, 2.0D, thisEntity.getDeltaMovement().z);
                 if(thisEntity.getY() > thisEntity.level().getHeight() && thisEntity.level() instanceof ServerLevel serverWorld) {
                     serverWorld.playSound(null, thisEntity.getX(), thisEntity.getY(), thisEntity.getZ(), SoundEvents.END_PORTAL_SPAWN, SoundSource.MASTER, 500, 1);
@@ -117,7 +118,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     @Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
     public void livingEntity$drop(ServerLevel world, DamageSource damageSource, CallbackInfo ci) {
         LivingEntity thisEntity = this.getLivingEntity();
-        if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityType.PLAYER) ci.cancel();
+        if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityTypes.PLAYER) ci.cancel();
     }
 
     @Inject(method = "isDeadOrDying", at = @At("RETURN"), cancellable = true)
