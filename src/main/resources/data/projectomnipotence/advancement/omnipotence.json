@@ -27,7 +27,6 @@
             "condition": "minecraft:entity_properties",
             "entity": "this",
             "predicate": {
-              "type": "minecraft:player",
               "nbt": "{isOmnipotent:1b}"
             }
           }
