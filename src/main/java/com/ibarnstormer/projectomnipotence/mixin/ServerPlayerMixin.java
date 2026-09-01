@@ -10,8 +10,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.Unit;
+import net.minecraft.world.attribute.BedRule;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AbstractBedBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -39,12 +42,12 @@ public abstract class ServerPlayerMixin extends Player {
     }
 
     @Inject(method = "startSleepInBed", at = @At("RETURN"), cancellable = true)
-    public void serverPlayerEntity$trySleep(BlockPos pos, CallbackInfoReturnable<Either<Player.BedSleepingProblem, Unit>> cir) {
+    public void serverPlayerEntity$trySleep(AbstractBedBlock bedBlock, BlockState bedBlockState, BedRule rule, BlockPos pos, CallbackInfoReturnable<Either<BedSleepingProblem, Unit>> cir) {
         cir.getReturnValue().ifLeft((reason) -> {
            if(reason == Player.BedSleepingProblem.NOT_SAFE) {
                 ServerPlayer player = this.getServerPlayer();
                 if(POUtils.isOmnipotent(player)) {
-                    cir.setReturnValue(super.startSleepInBed(pos).ifRight((unit) -> {
+                    cir.setReturnValue(super.startSleepInBed(bedBlock, bedBlockState, rule, pos).ifRight((unit) -> {
                         player.awardStat(Stats.SLEEP_IN_BED);
                         CriteriaTriggers.SLEPT_IN_BED.trigger(player);
                     }));

@@ -12,7 +12,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -32,13 +31,13 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
     boolean inHarmony;
 
     @Unique
-    private LivingEntity getLivingEntity() {
+    private LivingEntity getEntity() {
         return (LivingEntity) (Object) this;
     }
 
     @Inject(method = "readAdditionalSaveData", at = @At("TAIL"))
     public void livingEntity$readCustomData(ValueInput view, CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(thisEntity.getType() != EntityTypes.PLAYER) {
             POUtils.readNonPlayerData(thisEntity, view);
         }
@@ -46,7 +45,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "addAdditionalSaveData", at = @At("TAIL"))
     public void livingEntity$writeCustomData(ValueOutput view, CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(thisEntity.getType() != EntityTypes.PLAYER) {
             POUtils.writeNonPlayerData(thisEntity, view);
         }
@@ -62,7 +61,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
     public void livingEntity$damage(ServerLevel world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
 
         if(source.getEntity() instanceof Player playerAttacker) {
             if(POUtils.isOmnipotent(playerAttacker) && !POUtils.enlightenedPlayerInCreative(playerAttacker) && thisEntity.getType() != EntityTypes.PLAYER) {
@@ -88,7 +87,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "setHealth", at = @At("HEAD"), cancellable = true)
     public void livingEntity$setHealth(float health, CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player) {
             if(POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable && health < Math.max(thisEntity.getMaxHealth(), 20.0F)) {
                 ci.cancel();
@@ -98,7 +97,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "tick", at = @At("TAIL"))
     public void livingEntity$tick(CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
 
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityTypes.PLAYER) {
             if (thisEntity.level() instanceof ServerLevel serverWorld && thisEntity.tickCount % 5 == 0) {
@@ -117,13 +116,13 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "dropAllDeathLoot", at = @At("HEAD"), cancellable = true)
     public void livingEntity$drop(ServerLevel world, DamageSource damageSource, CallbackInfo ci) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(POUtils.isInHarmony(thisEntity) && thisEntity.getType() != EntityTypes.PLAYER) ci.cancel();
     }
 
     @Inject(method = "isDeadOrDying", at = @At("RETURN"), cancellable = true)
     public void livingEntity$isDead(CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && POUtils.getEntitiesEnlightened(player) >= Main.CONFIG.invulnerabilityEntityGoal && Main.CONFIG.omnipotentPlayersCanBecomeInvulnerable) {
             cir.setReturnValue(false);
         }
@@ -131,7 +130,7 @@ public abstract class LivingEntityMixin extends EntityMixin implements IHarmonic
 
     @Inject(method = "canBeAffected", at = @At("HEAD"), cancellable = true)
     public void livingEntity$canHaveStatusEffect(MobEffectInstance effect, CallbackInfoReturnable<Boolean> cir) {
-        LivingEntity thisEntity = this.getLivingEntity();
+        LivingEntity thisEntity = this.getEntity();
         if(thisEntity instanceof Player player && POUtils.isOmnipotent(player) && effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
             cir.setReturnValue(false);
         }

@@ -80,10 +80,10 @@ public class POUtils {
 
         discs = BuiltInRegistries.ITEM.stream().filter((item) -> item.builtInRegistryHolder().is(ItemTags.CREEPER_DROP_MUSIC_DISCS)).toList();
 
-        OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random) -> {
+        OMNIPOTENT_PROJECTILE_DEFLECTOR = (projectile, hitEntity, random, power) -> {
             if(hitEntity != null && hitEntity.level() instanceof ServerLevel serverWorld) serverWorld.playSound(null, hitEntity.getX(), hitEntity.getY(), hitEntity.getZ(), SoundEvents.CONDUIT_ACTIVATE, hitEntity.getSoundSource(), 1.0f, 2.0f);
-            projectile.setDeltaMovement(projectile.getDeltaMovement().scale(2.0));
-            ProjectileDeflection.REVERSE.deflect(projectile, hitEntity, random);
+            projectile.setDeltaMovement(projectile.getDeltaMovement().multiply(power).scale(2.0));
+            ProjectileDeflection.REVERSE.deflect(projectile, hitEntity, random, power);
         };
 
         finalizers = new HashMap<>();

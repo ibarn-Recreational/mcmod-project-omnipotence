@@ -22,15 +22,13 @@
     "requirement": {
       "trigger": "minecraft:tick",
       "conditions": {
-        "player": [
-          {
-            "condition": "minecraft:entity_properties",
-            "entity": "this",
-            "predicate": {
-              "nbt": "{isOmnipotent:1b}"
-            }
+        "player": {
+          "type": "minecraft:entity_properties",
+          "entity": "this",
+          "predicate": {
+            "minecraft:nbt": "{isOmnipotent:1b}"
           }
-        ]
+        }
       }
     }
   }
