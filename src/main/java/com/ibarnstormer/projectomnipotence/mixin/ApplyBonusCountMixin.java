@@ -23,7 +23,7 @@ public class ApplyBonusCountMixin {
     @WrapOperation(method = "run", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;getItemEnchantmentLevel(Lnet/minecraft/core/Holder;Lnet/minecraft/world/item/ItemInstance;)I"))
     private int applyBonusLootFunction$process(Holder<Enchantment> enchantment, ItemInstance piece, Operation<Integer> original, @Local(argsOnly = true) LootContext context) {
         if(context.hasParameter(LootContextParams.THIS_ENTITY)) {
-            Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
+            Entity entity = context.getOptional(LootContextParams.THIS_ENTITY);
             if(entity instanceof Player player && POUtils.isOmnipotent(player)) {
                 int eeLevel = POUtils.getLuckLevel(player);
                 return original.call(enchantment, piece) + eeLevel;
