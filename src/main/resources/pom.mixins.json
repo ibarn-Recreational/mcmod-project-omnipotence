@@ -30,6 +30,6 @@
   },
   "client": [
     "LocalPlayerMixin",
-    "GuiMixin"
+    "HudMixin"
   ]
 }
